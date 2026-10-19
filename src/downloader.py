@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def probe_duration(url: str) -> float:
+def probe_duration(source: str | Path) -> float:
     # TODO: Implement this — получить длительность в секундах до тяжёлой обработки.
     raise NotImplementedError("Получение метаданных видео ещё не реализовано")
 

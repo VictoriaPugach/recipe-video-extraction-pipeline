@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fropti Video-to-Recipe",
-    "description": "Учебный каркас: /health работает, /extract возвращает 501 до реализации. 200 — целевое поведение.",
+    "description": "Учебный каркас: /health работает, /extract и /extract/upload возвращают 501 до реализации распознавания. 200 — целевое поведение.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -42,6 +42,24 @@
           }
         },
         "url": "{{base_url}}/extract"
+      }
+    },
+    {
+      "name": "Upload video — выбери файл, 501 до реализации",
+      "request": {
+        "method": "POST",
+        "description": "В Body выбери локальное видео в поле file. Файл должен быть непустым и не больше 100 МиБ. Распознавание пока не реализовано.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": "{{base_url}}/extract/upload"
       }
     },
     {

@@ -20,4 +20,4 @@ class DraftRecipe(BaseModel):
     servings: Annotated[int, Field(gt=0, strict=True)]
     ingredients: Annotated[list[Ingredient], Field(min_length=1)]
     steps: Annotated[list[NonEmptyString], Field(min_length=1)]
-    source_url: HttpUrl
+    source_url: HttpUrl | None = None
