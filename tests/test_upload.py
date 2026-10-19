@@ -41,9 +41,9 @@ def test_upload_size_limits(monkeypatch, content, status, code):
 def test_upload_passes_file_and_cleans_up_after_success(monkeypatch):
     paths = []
     recipe_data = json.loads((ROOT / "data/expected_outputs/pasta.json").read_text())
-    recipe_data.pop("source_url")
+    recipe_data["source"] = {"type": "upload"}
     recipe = Recipe.model_validate(recipe_data)
-    assert recipe.source_url is None
+    assert recipe.source.type == "upload"
 
     def extract(source):
         assert isinstance(source, Path)

@@ -7,13 +7,13 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from src import pipeline
-from src.config import CONTRACT_MODE, MAX_UPLOAD_BYTES
-from src.models import Recipe
+from src.config import MAX_UPLOAD_BYTES
+from src.models import CONTRACT_VERSION, Recipe
 
 app = FastAPI(
     title="Fropti Video-to-Recipe API",
     version="0.1.0",
-    description=f"Учебный каркас. Режим контракта: {CONTRACT_MODE}. Пайплайн пока не реализован.",
+    description=f"Учебный каркас. Контракт Recipe {CONTRACT_VERSION}. Пайплайн пока не реализован.",
 )
 
 
@@ -25,7 +25,7 @@ class ExtractRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "contract_mode": CONTRACT_MODE}
+    return {"status": "ok", "contract_version": CONTRACT_VERSION}
 
 
 @app.post(

@@ -4,17 +4,17 @@
 
 ## GET /health
 
-Проверяет доступность приложения и сообщает выбранный режим контракта.
+Проверяет доступность приложения и сообщает версию общего контракта.
 
 ```http
 GET /health
 ```
 
 ```json
-{"status": "ok", "contract_mode": "draft"}
+{"status": "ok", "contract_version": "1.0.0"}
 ```
 
-В режиме общего пакета `contract_mode` равен `shared`. Этот endpoint не проверяет доступность видеоплатформ или моделей.
+Этот endpoint не проверяет доступность видеоплатформ или моделей.
 
 ## POST /extract
 
@@ -51,22 +51,27 @@ curl -i -X POST http://localhost:8000/extract/upload \
 
 ## 200 OK — целевой успешный ответ обоих эндпоинтов
 
-Ответ — сам объект `Recipe`, без дополнительной обертки. Для интеграции используется `Recipe` из `fropti-core-contracts`. Пока пакет не подключен, пример отражает только [черновую схему](data_schema.md):
+Ответ — сам объект `Recipe`, без дополнительной обёртки. API и OpenAPI используют модель из `fropti-core-contracts` 1.0.0. [Описание схемы](data_schema.md) и [JSON Schema](../packages/fropti-core-contracts/schemas/recipe-1.0.0.schema.json) едины для всех команд. Синтетический пример:
 
 ```json
 {
+  "schema_version": "1.0.0",
   "title": "Омлет",
   "servings": 1,
   "ingredients": [
-    {"name": "Яйца", "amount": 2, "unit": "шт."},
-    {"name": "Соль", "amount": null, "unit": null}
+    {"name": "Яйца", "quantity": {"value": 2, "unit": "pcs"}, "note": null},
+    {"name": "Соль", "quantity": null, "note": "По вкусу"}
   ],
-  "steps": ["Взбейте яйца с солью.", "Приготовьте омлет на сковороде."],
-  "source_url": "https://www.youtube.com/shorts/EXAMPLE_ID"
+  "steps": [
+    {"instruction": "Взбейте яйца с солью.", "duration_seconds": null},
+    {"instruction": "Приготовьте омлет на сковороде.", "duration_seconds": null}
+  ],
+  "source": {"type": "url", "url": "https://www.youtube.com/shorts/EXAMPLE_ID"},
+  "total_time_minutes": null
 }
 ```
 
-Для загрузки с устройства черновой `source_url` равен `null`. Представление источника в общем пакете нужно согласовать до интеграции. Каркас пока не извлекает рецепт и не возвращает этот пример как результат запроса.
+Для загрузки с устройства и CLI-файла использовать `"source": {"type": "upload"}`, без URL, имени файла или серверного пути. `{"type": "manual"}` предназначен для ручного ввода в других модулях; эндпоинты извлечения его не создают. Каркас пока не извлекает рецепт и не возвращает этот пример как результат запроса.
 
 ## Ошибки
 

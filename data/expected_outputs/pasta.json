@@ -1,27 +1,41 @@
 {
+  "schema_version": "1.0.0",
   "title": "Паста с томатами",
   "servings": 2,
   "ingredients": [
     {
       "name": "Паста",
-      "amount": 200,
-      "unit": "г"
+      "quantity": {
+        "value": 200,
+        "unit": "g"
+      }
     },
     {
       "name": "Томаты",
-      "amount": 300,
-      "unit": "г"
+      "quantity": {
+        "value": 300,
+        "unit": "g"
+      }
     },
     {
       "name": "Соль",
-      "amount": null,
-      "unit": null
+      "quantity": null
     }
   ],
   "steps": [
-    "Отварить пасту.",
-    "Нарезать и прогреть томаты.",
-    "Смешать пасту с томатами, посолить."
+    {
+      "instruction": "Отварить пасту."
+    },
+    {
+      "instruction": "Нарезать и прогреть томаты."
+    },
+    {
+      "instruction": "Смешать пасту с томатами, посолить."
+    }
   ],
-  "source_url": "https://example.org/videos/pasta"
+  "source": {
+    "type": "url",
+    "url": "https://example.org/videos/pasta"
+  },
+  "total_time_minutes": null
 }

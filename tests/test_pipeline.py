@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -10,7 +9,7 @@ from pydantic import ValidationError
 
 from src import downloader, pipeline
 from src.api import app
-from src.config import CONTRACT_MODE
+from fropti_core_contracts import CONTRACT_VERSION
 from src.models import Recipe
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +23,7 @@ def recipe_data():
 
 
 @pytest.mark.parametrize("name", ["pasta", "omelette", "salad"])
-def test_example_json_matches_selected_contract(name):
+def test_example_json_matches_shared_contract(name):
     raw = (ROOT / f"data/expected_outputs/{name}.json").read_text()
     recipe = Recipe.model_validate_json(raw)
     assert Recipe.model_validate_json(recipe.model_dump_json()) == recipe
@@ -32,7 +31,7 @@ def test_example_json_matches_selected_contract(name):
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("title", ""), ("servings", 0), ("ingredients", []), ("steps", []), ("source_url", "not-a-url")],
+    [("title", ""), ("servings", 0), ("ingredients", []), ("steps", []), ("source", {"type": "url", "url": "not-a-url"})],
 )
 def test_invalid_recipe_is_rejected(recipe_data, field, value):
     recipe_data[field] = value
@@ -40,10 +39,10 @@ def test_invalid_recipe_is_rejected(recipe_data, field, value):
         Recipe.model_validate(recipe_data)
 
 
-def test_health_identifies_contract_mode():
+def test_health_identifies_contract_version():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "contract_mode": CONTRACT_MODE}
+    assert response.json() == {"status": "ok", "contract_version": CONTRACT_VERSION}
 
 
 def test_openapi_describes_json_body_and_recipe():
@@ -93,8 +92,10 @@ def test_extract_serializes_recipe_from_pipeline(monkeypatch, recipe_data):
     assert received_urls == [VIDEO_URL]
 
 
-def test_extract_does_not_return_invalid_recipe(monkeypatch):
-    monkeypatch.setattr(pipeline, "extract_recipe", lambda url: {})
+@pytest.mark.parametrize("invalid_recipe", [{}, {"schema_version": "2.0.0"}])
+def test_extract_does_not_return_invalid_recipe(monkeypatch, recipe_data, invalid_recipe):
+    payload = {**recipe_data, **invalid_recipe} if invalid_recipe else {}
+    monkeypatch.setattr(pipeline, "extract_recipe", lambda url: payload)
     with TestClient(app, raise_server_exceptions=False) as error_client:
         assert error_client.post("/extract", json={"url": VIDEO_URL}).status_code == 500
 
@@ -108,16 +109,3 @@ def test_cli_reports_error_without_recipe(url, code):
     assert result.stdout == ""
     assert result.stderr
     assert "Traceback" not in result.stderr
-
-
-def test_invalid_contract_mode_fails_explicitly():
-    result = subprocess.run(
-        [sys.executable, "-c", "import src.models"],
-        cwd=ROOT,
-        env={**os.environ, "CONTRACT_MODE": "unknown"},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode != 0
-    assert "CONTRACT_MODE" in result.stderr

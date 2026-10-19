@@ -1,7 +1,10 @@
 fastapi>=0.115,<1.0
-pydantic>=2.10,<3.0
+pydantic==2.14.1
 uvicorn>=0.34,<1.0
 python-dotenv>=1.0,<2.0
 python-multipart>=0.0.20,<1.0
 httpx>=0.28,<0.29
 pytest>=8.3,<9.0
+jsonschema[format]>=4.23,<5.0
+./packages/fropti-core-contracts
+fropti-core-contracts==1.0.0

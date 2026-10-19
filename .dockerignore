@@ -6,3 +6,6 @@ __pycache__
 .pytest_cache
 docs
 data/input_videos
+**/build
+**/dist
+**/*.egg-info

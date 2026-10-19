@@ -1,8 +1,3 @@
-from src.config import CONTRACT_MODE
+from fropti_core_contracts.models import CONTRACT_VERSION, Recipe, Source
 
-if CONTRACT_MODE == "shared":
-    from fropti_core_contracts.models import Recipe
-else:
-    from src.models.draft import DraftRecipe as Recipe
-
-__all__ = ["Recipe"]
+__all__ = ["CONTRACT_VERSION", "Recipe", "Source"]

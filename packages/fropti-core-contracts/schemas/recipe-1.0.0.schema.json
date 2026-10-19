@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fropti:recipe:1.0.0",
+  "$defs": {
+    "Ingredient": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "name",
+        "quantity"
+      ],
+      "title": "Ingredient",
+      "type": "object"
+    },
+    "ManualSource": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "manual",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ManualSource",
+      "type": "object"
+    },
+    "Quantity": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "exclusiveMinimum": 0,
+          "title": "Value",
+          "type": "number"
+        },
+        "unit": {
+          "$ref": "#/$defs/Unit"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "title": "Quantity",
+      "type": "object"
+    },
+    "RecipeStep": {
+      "additionalProperties": false,
+      "properties": {
+        "instruction": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Instruction",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Seconds"
+        }
+      },
+      "required": [
+        "instruction"
+      ],
+      "title": "RecipeStep",
+      "type": "object"
+    },
+    "Unit": {
+      "enum": [
+        "g",
+        "kg",
+        "ml",
+        "l",
+        "pcs",
+        "tsp",
+        "tbsp",
+        "pinch"
+      ],
+      "title": "Unit",
+      "type": "string"
+    },
+    "UploadSource": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "upload",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "UploadSource",
+      "type": "object"
+    },
+    "UrlSource": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "url",
+          "title": "Type",
+          "type": "string"
+        },
+        "url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "pattern": "^https?://[^/\\s?#]+(?:[/?#][^\\s]*)?$",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "url"
+      ],
+      "title": "UrlSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Title",
+      "type": "string"
+    },
+    "servings": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Servings"
+    },
+    "ingredients": {
+      "items": {
+        "$ref": "#/$defs/Ingredient"
+      },
+      "minItems": 1,
+      "title": "Ingredients",
+      "type": "array"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/RecipeStep"
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "source": {
+      "discriminator": {
+        "mapping": {
+          "manual": "#/$defs/ManualSource",
+          "upload": "#/$defs/UploadSource",
+          "url": "#/$defs/UrlSource"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/UrlSource"
+        },
+        {
+          "$ref": "#/$defs/UploadSource"
+        },
+        {
+          "$ref": "#/$defs/ManualSource"
+        }
+      ],
+      "title": "Source"
+    },
+    "total_time_minutes": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Time Minutes"
+    }
+  },
+  "required": [
+    "schema_version",
+    "title",
+    "servings",
+    "ingredients",
+    "steps",
+    "source"
+  ],
+  "title": "Recipe",
+  "type": "object"
+}
