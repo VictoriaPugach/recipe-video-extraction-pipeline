@@ -1,0 +1,26 @@
+{
+  "title": "Салат из огурцов и томатов",
+  "servings": 2,
+  "ingredients": [
+    {
+      "name": "Огурцы",
+      "amount": 200,
+      "unit": "г"
+    },
+    {
+      "name": "Томаты",
+      "amount": 200,
+      "unit": "г"
+    },
+    {
+      "name": "Растительное масло",
+      "amount": 1,
+      "unit": "ст. л."
+    }
+  ],
+  "steps": [
+    "Нарезать огурцы и томаты.",
+    "Добавить масло и перемешать."
+  ],
+  "source_url": "https://example.org/videos/salad"
+}

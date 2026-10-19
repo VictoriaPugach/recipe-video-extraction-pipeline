@@ -1,0 +1,21 @@
+{
+  "title": "Омлет",
+  "servings": 1,
+  "ingredients": [
+    {
+      "name": "Яйца",
+      "amount": 2,
+      "unit": "шт"
+    },
+    {
+      "name": "Молоко",
+      "amount": 30,
+      "unit": "мл"
+    }
+  ],
+  "steps": [
+    "Взбить яйца с молоком.",
+    "Вылить на сковороду и готовить до схватывания."
+  ],
+  "source_url": "https://example.org/videos/omelette"
+}

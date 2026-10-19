@@ -1,0 +1,29 @@
+{
+  "status": "template_no_videos_supplied",
+  "videos": [
+    {
+      "file": "pasta.mp4",
+      "source_url": null,
+      "license_or_permission": null,
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/pasta.json",
+      "annotation_verified": false
+    },
+    {
+      "file": "omelette.mp4",
+      "source_url": null,
+      "license_or_permission": null,
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/omelette.json",
+      "annotation_verified": false
+    },
+    {
+      "file": "salad.mp4",
+      "source_url": null,
+      "license_or_permission": null,
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/salad.json",
+      "annotation_verified": false
+    }
+  ]
+}

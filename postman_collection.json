@@ -1,0 +1,70 @@
+{
+  "info": {
+    "name": "Fropti Video-to-Recipe",
+    "description": "Учебный каркас: /health работает, /extract возвращает 501 до реализации. 200 — целевое поведение.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "video_url",
+      "value": "https://www.youtube.com/shorts/REPLACE_WITH_VIDEO_ID"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health — 200",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "Extract — 501 в каркасе, 200 после реализации",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"url\": \"{{video_url}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/extract"
+      }
+    },
+    {
+      "name": "Invalid URL — 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"url\": \"not-a-url\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/extract"
+      }
+    }
+  ]
+}

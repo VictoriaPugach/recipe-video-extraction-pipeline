@@ -1,0 +1,27 @@
+{
+  "title": "Паста с томатами",
+  "servings": 2,
+  "ingredients": [
+    {
+      "name": "Паста",
+      "amount": 200,
+      "unit": "г"
+    },
+    {
+      "name": "Томаты",
+      "amount": 300,
+      "unit": "г"
+    },
+    {
+      "name": "Соль",
+      "amount": null,
+      "unit": null
+    }
+  ],
+  "steps": [
+    "Отварить пасту.",
+    "Нарезать и прогреть томаты.",
+    "Смешать пасту с томатами, посолить."
+  ],
+  "source_url": "https://example.org/videos/pasta"
+}
