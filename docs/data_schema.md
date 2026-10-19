@@ -8,8 +8,6 @@
 from fropti_core_contracts.models import Recipe
 ```
 
-Точный адрес репозитория, версия пакета и его поля не предоставлены. [Относительная ссылка `fropti-core-contracts`](../../fropti-core-contracts) — ориентир, который нужно проверить, а не подтвержденный адрес зависимости.
-
 ## Два явных режима
 
 | `CONTRACT_MODE` | Поведение |
