@@ -7,15 +7,21 @@ permissions:
 
 jobs:
   test:
+    name: Python ${{ matrix.python-version }} · contract and tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         python-version: ["3.10", "3.12", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: make install PYTHON=python
-      - run: make test
+      - name: Install project and shared contract
+        run: make install PYTHON=python
+      - name: Validate schema and run tests
+        run: make test

@@ -2,6 +2,8 @@ from copy import deepcopy
 from importlib.metadata import version
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 from fropti_core_contracts import CONTRACT_VERSION
 from fropti_core_contracts.models import (
@@ -14,6 +16,7 @@ from fropti_core_contracts.models import (
     UrlSource,
 )
 from fropti_core_contracts.schema import recipe_schema
+from fropti_core_contracts.validation import validate_recipe, validate_recipe_json
 from jsonschema import Draft202012Validator, FormatChecker
 from pydantic import ValidationError
 import pytest
@@ -209,3 +212,44 @@ def test_whole_json_numbers_normalize_to_integers(recipe_data, schema_validator)
     assert recipe.steps[0].duration_seconds == 60
     assert type(recipe.total_time_minutes) is int
     assert recipe.total_time_minutes == 20
+
+
+@pytest.mark.parametrize("consumer", ["video extraction", "cooking planner", "shopping list"])
+def test_all_three_modules_accept_the_same_recipe(recipe_data, schema_validator, consumer):
+    producer_result = validate_recipe(recipe_data)
+    wire_payload = producer_result.model_dump_json()
+
+    schema_validator.validate(json.loads(wire_payload))
+    consumer_input = validate_recipe_json(wire_payload)
+
+    assert consumer_input == producer_result, consumer
+    assert consumer_input.steps, consumer
+    assert consumer_input.ingredients, consumer
+
+
+def test_contract_validator_cli_accepts_examples_and_rejects_invalid_json(tmp_path):
+    valid_path = ROOT / "data/expected_outputs/pasta.json"
+    invalid_path = tmp_path / "invalid.json"
+    invalid_path.write_text('{"schema_version":"1.0.0"}', encoding="utf-8")
+
+    valid = subprocess.run(
+        [sys.executable, "-m", "fropti_core_contracts", str(valid_path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    invalid = subprocess.run(
+        [sys.executable, "-m", "fropti_core_contracts", str(invalid_path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert valid.returncode == 0
+    assert valid.stdout.startswith("OK ")
+    assert valid.stderr == ""
+    assert invalid.returncode == 1
+    assert invalid.stdout.startswith("INVALID ")
+    assert invalid.stderr == ""

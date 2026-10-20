@@ -10,6 +10,7 @@ from fropti_core_contracts.models import (
     UploadSource,
     UrlSource,
 )
+from fropti_core_contracts.validation import validate_recipe, validate_recipe_json
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -22,4 +23,6 @@ __all__ = [
     "Unit",
     "UploadSource",
     "UrlSource",
+    "validate_recipe",
+    "validate_recipe_json",
 ]
