@@ -39,6 +39,7 @@ services:
       https_proxy: http://egress-proxy:3128
       NO_PROXY: localhost,127.0.0.1,::1
       no_proxy: localhost,127.0.0.1,::1
+      YTDLP_COOKIES_FILE: /cookies.txt
     depends_on:
       egress-proxy:
         condition: service_healthy

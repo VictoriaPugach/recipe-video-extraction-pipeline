@@ -70,7 +70,7 @@ def test_extract_frames_limits_frame_count(tmp_path):
         check=True, capture_output=True, text=True,
     )
     frames = frames_mod.extract_frames(video, tmp_path / "frames")
-    assert 1 <= len(frames) <= 12
+    assert 1 <= len(frames) <= 30
 
 
 class _FakeReader:

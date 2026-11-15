@@ -419,7 +419,8 @@ def test_broken_cookies_files_fail_fast(tmp_path):
             with pytest.raises(downloader.DownloadError) as exc_info:
                 downloader._assert_cookies_readable()
             assert hint in str(exc_info.value)
-            assert str(broken) in str(exc_info.value)
+            message = str(exc_info.value)
+            assert str(broken) in message or repr(str(broken)) in message
     finally:
         downloader.YTDLP_COOKIES_FILE = original
 

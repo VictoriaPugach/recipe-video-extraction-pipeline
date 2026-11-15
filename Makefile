@@ -1,4 +1,5 @@
 VENV := .venv
+export PYTHONUTF8 := 1
 # Windows venvs put the interpreter under Scripts\ and name the launcher
 # "python"; POSIX venvs use bin/python. $(OS) is Windows_NT on Windows.
 ifeq ($(OS),Windows_NT)
