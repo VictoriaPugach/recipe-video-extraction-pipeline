@@ -78,7 +78,6 @@ def test_missing_yt_dlp_binary_is_server_error_not_download_failure(monkeypatch)
         raise FileNotFoundError(f"[Errno 2] No such file or directory: {command[0]!r}")
 
     monkeypatch.setattr(downloader.subprocess, "run", no_binary)
-    monkeypatch.setattr(downloader, "_assert_public_host", lambda hostname: None)
     with pytest.raises(downloader.DownloaderUnavailableError) as exc_info:
         downloader.probe_duration("https://www.youtube.com/watch?v=abc")
     assert exc_info.value.http_status == 500

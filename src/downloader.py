@@ -1,17 +1,14 @@
 # Безопасное получение видео: длительность до тяжёлой обработки и скачивание
 # только для URL из разрешённого списка платформ. Защита от SSRF: разбор URL,
-# allowlist хостов, разрешение DNS с запретом частных адресов, таймауты,
-# ограничение размера файла, временные файлы с очисткой на уровне пайплайна.
-# Все обращения yt-dlp идут через обязательный egress-прокси; сетевая
-# изоляция и фильтрация адресов назначения — docs/architecture.md, «Безопасность».
+# allowlist хостов, таймауты, ограничение размера файла, временные файлы с
+# очисткой на уровне пайплайна. Все обращения yt-dlp идут через обязательный
+# egress-прокси; DNS и адреса назначения проверяет Squid, а не internal-only API.
 from __future__ import annotations
 
-import ipaddress
 import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import tempfile
 from contextlib import contextmanager
@@ -41,11 +38,6 @@ class DownloadError(AppError):
 
 class UnsupportedPlatformError(DownloadError):
     code = "unsupported_platform"
-    http_status = 400
-
-
-class SSRFBlockedError(DownloadError):
-    code = "ssrf_blocked"
     http_status = 400
 
 
@@ -155,26 +147,6 @@ def _assert_host_allowed(hostname: str) -> None:
         )
 
 
-def _assert_public_host(hostname: str) -> None:
-    # Ранняя проверка входа (fail fast). Фактические соединения, включая новые
-    # DNS-ответы и редиректы, дополнительно фильтрует Squid на egress-пути.
-    try:
-        infos = socket.getaddrinfo(hostname, None)
-    except socket.gaierror as exc:
-        raise DownloadError(f"Не удалось разрешить адрес {hostname!r}") from exc
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0])
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        ):
-            raise SSRFBlockedError(f"Хост {hostname!r} указывает на запрещённый адрес {ip}")
-
-
 def _stderr_excerpt(stderr: str, limit: int = 400) -> str:
     # WARNING печатаются до финального ERROR — показываем конец потока;
     # traceback расширяет лимит, хвост без последней строки бесполезен.
@@ -243,9 +215,7 @@ def probe_duration(source: str | Path) -> float:
             raise MediaProcessingError(str(exc)) from exc
         except RuntimeError as exc:
             raise VideoUnreadableError(str(exc)) from exc
-    hostname = _hostname(source)
-    _assert_host_allowed(hostname)
-    _assert_public_host(hostname)
+    _assert_host_allowed(_hostname(source))
     _assert_cookies_readable()
     metadata = _yt_dlp_metadata(source)
     duration = metadata.get("duration")
@@ -278,9 +248,7 @@ def download_video(url: str, output_dir: Path) -> Path:
     # Второй вызов yt-dlp для той же страницы: лимит длительности обязан
     # срабатывать до скачивания, а --load-info-json ненадёжен — прямые
     # ссылки на медиа живут минуты. Повторное извлечение стоит секунды.
-    hostname = _hostname(url)
-    _assert_host_allowed(hostname)
-    _assert_public_host(hostname)
+    _assert_host_allowed(_hostname(url))
     _assert_cookies_readable()
     output_dir.mkdir(parents=True, exist_ok=True)
     template = str(output_dir / "source.%(ext)s")

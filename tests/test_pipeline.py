@@ -354,7 +354,6 @@ def test_probe_duration_without_platform_duration_is_client_error(monkeypatch):
     # Метаданные без duration — 400 video_unreadable (нельзя подтвердить
     # лимит длительности), а не 502 download_failed: сетевого сбоя не было,
     # 502 остаётся для случая, когда метаданные получить не удалось.
-    monkeypatch.setattr(downloader, "_assert_public_host", lambda hostname: None)
     monkeypatch.setattr(downloader, "_yt_dlp_metadata", lambda url: {"id": "abc123"})
     with pytest.raises(downloader.VideoUnreadableError) as exc_info:
         downloader.probe_duration("https://youtu.be/abc123")
@@ -364,7 +363,6 @@ def test_probe_duration_without_platform_duration_is_client_error(monkeypatch):
 def test_probe_duration_garbage_value_is_client_error(monkeypatch):
     # Мусор вместо числа длительности — 400 video_unreadable (данные
     # платформы недостоверны), а не необработанный ValueError.
-    monkeypatch.setattr(downloader, "_assert_public_host", lambda hostname: None)
     monkeypatch.setattr(downloader, "_yt_dlp_metadata", lambda url: {"duration": "abc"})
     with pytest.raises(downloader.VideoUnreadableError, match="недостоверную длительность"):
         downloader.probe_duration("https://youtu.be/abc123")
@@ -445,7 +443,6 @@ def test_private_cookies_copy_isolated_per_run(tmp_path, monkeypatch):
         # Право записи больше не проверяется: «:ro» не препятствие.
         downloader._assert_cookies_readable()
 
-        monkeypatch.setattr(downloader, "_assert_public_host", lambda hostname: None)
         captured = {}
 
         def fake_run(command, timeout):

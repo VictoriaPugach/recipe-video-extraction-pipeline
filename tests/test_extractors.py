@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 from src import downloader, media
-from src.downloader import SSRFBlockedError, UnsupportedPlatformError
+from src.downloader import UnsupportedPlatformError
 from src.extractors import frames as frames_mod
 from src.extractors import ocr as ocr_mod
 from src.extractors import stt as stt_mod
@@ -27,13 +27,33 @@ def test_downloader_rejects_unsupported_platform():
     assert "unsupported_platform" == excinfo.value.code
 
 
-def test_downloader_blocks_ssrf(monkeypatch):
-    def fake_getaddrinfo(host, port, *args, **kwargs):
-        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))]
+def test_downloader_url_paths_do_not_require_local_dns(monkeypatch, tmp_path):
+    # API подключён только к internal-сети: DNS выполняет Squid на egress-пути.
+    # Оба вызова yt-dlp обязаны дойти до прокси, даже если локальный DNS запрещён.
+    def fail_local_dns(*args, **kwargs):
+        raise AssertionError("API не должен разрешать DNS для URL-загрузки")
 
-    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
-    with pytest.raises(SSRFBlockedError):
-        downloader.probe_duration("https://youtu.be/abc123")
+    commands = []
+
+    def fake_run(command, timeout):
+        commands.append(list(command))
+        if "--skip-download" in command:
+            return subprocess.CompletedProcess(
+                args=command, returncode=0, stdout='{"duration": 12.5}', stderr=""
+            )
+        (tmp_path / "source.mp4").write_bytes(b"video")
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(socket, "getaddrinfo", fail_local_dns)
+    monkeypatch.setattr(downloader, "_run", fake_run)
+    url = "https://youtu.be/abc123"
+
+    assert downloader.probe_duration(url) == 12.5
+    assert downloader.download_video(url, tmp_path) == tmp_path / "source.mp4"
+    assert len(commands) == 2
+    for command in commands:
+        proxy_index = command.index("--proxy")
+        assert command[proxy_index + 1] == "http://egress-proxy:3128"
 
 
 def test_downloader_rejects_non_http_scheme():

@@ -25,12 +25,12 @@ app = FastAPI(
 )
 
 _ERROR_RESPONSES = {
-    400: {"description": "empty_file, video_too_long, unsupported_platform, ssrf_blocked, video_unreadable"},
+    400: {"description": "empty_file, video_too_long, unsupported_platform, video_unreadable"},
     413: {"description": "file_too_large"},
     422: {"description": "no_usable_content или стандартная ошибка валидации тела"},
     500: {"description": "media_processing_failed, ocr_failed, downloader_unavailable, internal_error"},
     502: {"description": "download_failed, llm_unavailable, llm_invalid_response"},
-    503: {"description": "model_unavailable"},
+    503: {"description": "model_unavailable, egress_proxy_required"},
 }
 
 # Multipart-тело больше самого файла на границы и заголовки частей;

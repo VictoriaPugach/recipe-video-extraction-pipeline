@@ -101,7 +101,7 @@ services:
       # ":ro" is fine (docker secrets too): yt-dlp gets a private temp copy
       # per run (_private_cookies_file); the mounted file is only ever read.
       # Update cookies by replacing the file — no container restart needed.
-      - ./cookies.txt:/cookies.txt
+      - ./cookies.txt:/cookies.txt:ro
       # Debug artifacts (DEBUG_ARTIFACTS_DIR in .env): transcript.txt and
       # screen_text.txt per run land in ./runs/debug on the host. Uncomment
       # together with DEBUG_ARTIFACTS_DIR=/runs/debug.
