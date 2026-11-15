@@ -81,6 +81,20 @@ def _equal(left, right) -> bool:
     return left == right
 
 
+def _array_element_missing(pointer: str, other_paths: dict) -> bool:
+    """True, если отсутствует весь элемент списка, а не одно nullable-поле.
+
+    Например, для /steps/2/duration_seconds проверяем, есть ли в другом
+    документе хоть один путь внутри /steps/2/. Иначе absent-equals-null мог
+    бы засчитать длительность полностью отсутствующего шага как совпадение.
+    """
+    parent = pointer.rsplit("/", 1)[0]
+    if not re.search(r"/\d+$", parent):
+        return False
+    prefix = f"{parent}/"
+    return not any(other.startswith(prefix) for other in other_paths)
+
+
 def _compare_path_maps(gold_paths: dict, result_paths: dict, absent_equals_null: bool) -> tuple[int, list[dict]]:
     """Общая сверка двух карт «указатель → значение»: совпадения и расхождения."""
     matches = 0
@@ -93,14 +107,16 @@ def _compare_path_maps(gold_paths: dict, result_paths: dict, absent_equals_null:
             else:
                 diffs.append({"pointer": pointer, "status": "unequal", "gold": gold_paths[pointer], "result": result_paths[pointer]})
         elif in_gold:
-            # Отсутствующее поле и null различаются; согласованная нормализация
-            # (--absent-equals-null) считает null равным отсутствующему полю.
-            if absent_equals_null and gold_paths[pointer] is None:
+            # null равен отсутствующему полю только внутри существующего
+            # элемента списка. Полностью пропущенный шаг совпадением не бывает.
+            if (absent_equals_null and gold_paths[pointer] is None
+                    and not _array_element_missing(pointer, result_paths)):
                 matches += 1
             else:
                 diffs.append({"pointer": pointer, "status": "missing_in_result", "gold": gold_paths[pointer]})
         else:
-            if absent_equals_null and result_paths[pointer] is None:
+            if (absent_equals_null and result_paths[pointer] is None
+                    and not _array_element_missing(pointer, gold_paths)):
                 matches += 1
             else:
                 diffs.append({"pointer": pointer, "status": "extra_in_result", "result": result_paths[pointer]})
@@ -176,10 +192,14 @@ def compare(gold: dict, result: dict, excludes: tuple[str, ...] = (), absent_equ
     gold_flat = flatten(gold)
     result_flat = flatten(result)
     if skip_instructions:
-        # Тексты шагов — свободная форма, точное совпадение строк наказывало бы
-        # перефразирование; их качество оценивается вручную (real-testing.md, п. 4).
-        gold_flat = {p: v for p, v in gold_flat.items() if not _INSTRUCTION_POINTER.match(p)}
-        result_flat = {p: v for p, v in result_flat.items() if not _INSTRUCTION_POINTER.match(p)}
+        # Исключаем СОДЕРЖИМОЕ инструкций, но сохраняем их пути-маркеры:
+        # одинаковый маркер засчитывается только для шага, существующего в обоих
+        # документах. Полностью пропущенные/лишние шаги остаются расхождениями.
+        marker = "<excluded-by-skip-instructions>"
+        gold_flat = {p: marker if _INSTRUCTION_POINTER.match(p) else v
+                     for p, v in gold_flat.items()}
+        result_flat = {p: marker if _INSTRUCTION_POINTER.match(p) else v
+                       for p, v in result_flat.items()}
 
     matches = 0
     diffs: list[dict] = []

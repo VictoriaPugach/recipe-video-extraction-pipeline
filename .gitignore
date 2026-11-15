@@ -11,6 +11,4 @@ htmlcov/
 build/
 dist/
 *.egg-info/
-# cookies.txt = доступ к аккаунту YouTube: никогда не коммитить.
 cookies*.txt
-/data/input_videos

@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0.0",
+  "title": "butter chicken",
+  "servings": null,
+  "ingredients": [
+    {
+      "name": "red onion",
+      "quantity": {
+        "value": 1.0,
+        "unit": "pcs"
+      },
+      "note": "large"
+    },
+    {
+      "name": "tomatoes",
+      "quantity": {
+        "value": 4.0,
+        "unit": "pcs"
+      },
+      "note": "4 to 5"
+    },
+    {
+      "name": "oil",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "garlic",
+      "quantity": null,
+      "note": null
+    },
+	{
+      "name": "onions",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "ground masala",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Kashmiri red chili",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "turmeric",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "cumin",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "coriander powder",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "salt",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "cream",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "sugar",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "fenugreek leaves",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "chicken",
+      "quantity": null,
+      "note": "cube it up"
+    },
+    {
+      "name": "yogurt",
+      "quantity": null,
+      "note": null
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "Slice one large red onion and roughly chop four to five tomatoes.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Heat up oil in a pan and add in the garlic and onions and let that caramelize then add in your tomatoes and let that cook down until soft.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add the spices: ground masala, Kashmiri red chili, turmeric, cumin and coriander powder and salt.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Blend it all up, add it back to the pan, add some cream, sugar and then fenugreek leaves to make the base.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Cube up the chicken, marinate it with yogurt and the same spices as before.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Air fry for 12 minutes at 380 and back in the sauce.",
+      "duration_seconds": 720
+    }
+  ],
+  "source": {
+    "type": "upload"
+  },
+  "total_time_minutes": 30
+}

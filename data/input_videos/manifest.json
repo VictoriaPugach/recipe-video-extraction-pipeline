@@ -1,0 +1,37 @@
+{
+  "status": "validation_set_supplied_4_videos",
+  "videos": [
+    {
+      "file": "shakshuka.mp4",
+      "source_url": "https://www.youtube.com/shorts/U4lQPin-zis",
+      "license_or_permission": "YouTube Shorts: строка «Лицензия» в описании не отображается; право не подтверждено — файл локальный, в репозиторий не коммитится",
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/shakshuka.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "plov.mp4",
+      "source_url": "https://www.facebook.com/watch/?v=1293244242771191",
+      "license_or_permission": "Facebook, страница «Milana Russian Wife»: публичного механизма лицензий нет; право на распространение не подтверждено — файл локальный, в репозиторий не коммитится",
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/plov.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "cake.mp4",
+      "source_url": "https://www.youtube.com/watch?v=tEPwZuWx8ds",
+      "license_or_permission": "YouTube: лицензия не проверена (Standard YouTube Licence или CC-BY); до подтверждения файл локальный, в репозиторий не коммитится",
+      "duration_seconds": null,
+      "expected_output": "../expected_outputs/cake.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "tomatoChickpea.mp4",
+      "source_url": "https://www.youtube.com/shorts/fhphZcnJ3dA",
+      "license_or_permission": "YouTube Shorts: строка «Лицензия» в описании не отображается; право не подтверждено — файл локальный, в репозиторий не коммитится",
+      "duration_seconds": 72,
+      "expected_output": "../expected_outputs/tomatoChickpea.json",
+      "annotation_verified": true
+    }
+  ]
+}

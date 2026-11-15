@@ -215,6 +215,37 @@ def test_pipeline_rejects_empty_transcript_and_screen_text(monkeypatch, tmp_path
         pipeline.extract_recipe(video)
 
 
+def test_pipeline_saves_debug_artifacts(monkeypatch, tmp_path):
+    # DEBUG_ARTIFACTS_DIR: расшифровка речи и текст с экрана сохраняются до
+    # fusion — артефакты приёмки (real-testing.md) доступны даже при сбое LLM.
+    video = tmp_path / "video.mp4"
+    video.write_bytes(b"video")
+    debug_dir = tmp_path / "artifacts"
+    monkeypatch.setattr(pipeline, "DEBUG_ARTIFACTS_DIR", str(debug_dir))
+    monkeypatch.setattr(downloader, "probe_duration", lambda source: 10.0)
+    monkeypatch.setattr(pipeline.stt_mod, "transcribe", lambda path: "речь из видео")
+    monkeypatch.setattr(pipeline.frames_mod, "extract_frames", lambda path, out: [])
+    monkeypatch.setattr(pipeline.ocr_mod, "recognize_text", lambda frames: "надпись")
+    monkeypatch.setattr(
+        pipeline.fusion,
+        "fuse_recipe",
+        lambda transcript, screen_text, source: Recipe.model_validate({
+            "schema_version": "1.0.0",
+            "title": "Тест",
+            "servings": None,
+            "ingredients": [{"name": "Соль", "quantity": None, "note": None}],
+            "steps": [{"instruction": "Готовить.", "duration_seconds": None}],
+            "source": source,
+            "total_time_minutes": None,
+        }),
+    )
+    pipeline.extract_recipe(video)
+    runs = list(debug_dir.glob("run-*"))
+    assert len(runs) == 1
+    assert (runs[0] / "transcript.txt").read_text(encoding="utf-8") == "речь из видео"
+    assert (runs[0] / "screen_text.txt").read_text(encoding="utf-8") == "надпись"
+
+
 @pytest.mark.parametrize(("url", "code"), [(VIDEO_URL, 1), ("not-a-url", 2)])
 def test_cli_reports_error_without_recipe(url, code):
     result = subprocess.run(
@@ -232,9 +263,20 @@ def test_yt_dlp_command_default_has_no_auth_flags():
     command = downloader._yt_dlp_command("--skip-download", "-J", VIDEO_URL)
     assert command[:2] == ["yt-dlp", "--no-playlist"]
     assert "--js-runtimes" in command
+    proxy_index = command.index("--proxy")
+    assert command[proxy_index + 1] == "http://egress-proxy:3128"
     assert "--cookies" not in command
     assert "--cookies-from-browser" not in command
     assert "--extractor-args" not in command
+
+
+def test_yt_dlp_command_fails_closed_without_egress_proxy(monkeypatch):
+    # Пустая настройка не должна превращаться в прямой запуск yt-dlp.
+    monkeypatch.setattr(downloader, "EGRESS_PROXY_URL", "")
+    with pytest.raises(downloader.EgressConfigurationError) as exc_info:
+        downloader._yt_dlp_command("-J", VIDEO_URL)
+    assert exc_info.value.code == "egress_proxy_required"
+    assert exc_info.value.http_status == 503
 
 
 def test_yt_dlp_command_passes_cookies_file_and_player_client(monkeypatch):

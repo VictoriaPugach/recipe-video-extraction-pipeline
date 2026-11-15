@@ -2,7 +2,8 @@
 # только для URL из разрешённого списка платформ. Защита от SSRF: разбор URL,
 # allowlist хостов, разрешение DNS с запретом частных адресов, таймауты,
 # ограничение размера файла, временные файлы с очисткой на уровне пайплайна.
-# Известные ограничения защиты — docs/architecture.md, раздел «Безопасность».
+# Все обращения yt-dlp идут через обязательный egress-прокси; сетевая
+# изоляция и фильтрация адресов назначения — docs/architecture.md, «Безопасность».
 from __future__ import annotations
 
 import ipaddress
@@ -21,6 +22,7 @@ from src import media
 from src.config import (
     ALLOWED_URL_HOSTS,
     DOWNLOAD_TIMEOUT_SECONDS,
+    EGRESS_PROXY_URL,
     MAX_DOWNLOAD_BYTES,
     MAX_VIDEO_SECONDS,
     YTDLP_COOKIES_FILE,
@@ -45,6 +47,11 @@ class UnsupportedPlatformError(DownloadError):
 class SSRFBlockedError(DownloadError):
     code = "ssrf_blocked"
     http_status = 400
+
+
+class EgressConfigurationError(AppError):
+    code = "egress_proxy_required"
+    http_status = 503
 
 
 def _run(command: list[str], timeout: int) -> subprocess.CompletedProcess:
@@ -149,9 +156,8 @@ def _assert_host_allowed(hostname: str) -> None:
 
 
 def _assert_public_host(hostname: str) -> None:
-    # DNS разрешается один раз, yt-dlp при скачивании пере-разрешит сам:
-    # окно DNS-rebinding. Для MVP принято, закрытие требует контроля egress —
-    # docs/architecture.md, раздел «Безопасность».
+    # Ранняя проверка входа (fail fast). Фактические соединения, включая новые
+    # DNS-ответы и редиректы, дополнительно фильтрует Squid на egress-пути.
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
@@ -185,7 +191,13 @@ def _yt_dlp_command(*extra: str, cookies_file: str | None = None) -> list[str]:
     # cookies и клиент плеера — против «Sign in to confirm you're not a bot»,
     # проверка срабатывает уже на метаданных (-J). cookies_file — личная копия
     # (_private_cookies_file): yt-dlp перезаписывает cookiefile при выходе.
-    command = ["yt-dlp", "--no-playlist"]
+    # Оба вызова (метаданные и скачивание) обязаны идти через контрольную
+    # точку. Пустая настройка — отказ конфигурации, никогда не direct fallback.
+    if not EGRESS_PROXY_URL:
+        raise EgressConfigurationError(
+            "Для URL-извлечения задайте EGRESS_PROXY_URL; прямой исходящий доступ запрещён"
+        )
+    command = ["yt-dlp", "--no-playlist", "--proxy", EGRESS_PROXY_URL]
     if YTDLP_JS_RUNTIME:
         command += ["--js-runtimes", YTDLP_JS_RUNTIME]
     if cookies_file:

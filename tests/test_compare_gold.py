@@ -237,6 +237,32 @@ def test_skip_instructions_excludes_free_text_steps():
     assert relaxed["diffs"] == [] and relaxed["ratio"] == 1.0
 
 
+def test_missing_steps_cannot_pass_through_null_durations():
+    # Регрессия: рекомендованный пресет раньше давал 100% результату с одним
+    # неверным шагом вместо трёх. Пропавшие инструкции исчезали из метрики,
+    # а null-длительности несуществующих шагов засчитывались как совпадения.
+    gold = {
+        "title": "Тест",
+        "steps": [
+            {"instruction": "One", "duration_seconds": None},
+            {"instruction": "Two", "duration_seconds": None},
+            {"instruction": "Three", "duration_seconds": None},
+        ],
+    }
+    result = {
+        "title": "Тест",
+        "steps": [{"instruction": "Completely wrong", "duration_seconds": None}],
+    }
+    report = compare(gold, result, absent_equals_null=True, skip_instructions=True)
+    assert report["matches"] == 3  # title + существование и duration единственного шага
+    assert report["total"] == 7
+    assert report["ratio"] < 0.8
+    assert {d["pointer"] for d in report["diffs"]} == {
+        "/steps/1/instruction", "/steps/1/duration_seconds",
+        "/steps/2/instruction", "/steps/2/duration_seconds",
+    }
+
+
 def test_skip_instructions_still_measures_duration():
     # Текст выведен, число — нет: неверная длительность остаётся расхождением.
     gold = {"steps": [{"instruction": "Жарьте 2 минуты", "duration_seconds": 120}]}

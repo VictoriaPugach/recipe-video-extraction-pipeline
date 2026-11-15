@@ -10,6 +10,10 @@ MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(100 * 1024 * 1024)))
 
 # Загрузчик URL
 DOWNLOAD_TIMEOUT_SECONDS = int(os.getenv("DOWNLOAD_TIMEOUT_SECONDS", "30"))
+# Обязательный контролируемый выход для yt-dlp. В Compose это Squid во
+# внутренней сети; пустое значение запрещает URL-запуск, а не включает прямой
+# доступ. Вне Docker укажите эквивалентный фильтрующий HTTP(S)-прокси.
+EGRESS_PROXY_URL = os.getenv("EGRESS_PROXY_URL", "http://egress-proxy:3128").strip()
 # JS-рантайм для yt-dlp: challenge-скрипты плеера YouTube исполняются в
 # JavaScript, yt-dlp принимает node >= 22 / deno >= 2.3 / bun >= 1.2.11
 # (Debian Bookworm ставит node 18 — поэтому в Dockerfile node 22 из NodeSource).
@@ -94,3 +98,10 @@ LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.0"))
 # Язык рецепта на выходе LLM: "auto" — язык исходного видео (речи и надписей),
 # иначе явное указание, например OUTPUT_LANGUAGE=English.
 OUTPUT_LANGUAGE = os.getenv("OUTPUT_LANGUAGE", "auto").strip()
+
+# Опциональный каталог промежуточных артефактов: каждый запуск пишет
+# transcript.txt и screen_text.txt в свой подкаталог run-*. Нужно для
+# приёмки (real-testing.md) и разбора расхождений с эталоном. Файлы могут
+# содержать персональные данные из речи: в репозиторий — только обезличенные.
+# Пусто = артефакты не сохраняются.
+DEBUG_ARTIFACTS_DIR = os.getenv("DEBUG_ARTIFACTS_DIR", "").strip()
