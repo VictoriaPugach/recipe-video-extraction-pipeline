@@ -1,0 +1,7 @@
+Command:
+python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/butterChicken.json runs/butterChicken.upload.json
+
+Эталон:   data/expected_outputs/butterChicken.json
+Результат: runs/butterChicken.upload.json
+Пути в объединении: 50; совпадений: 50; расхождений: 0.
+Совпадение: 50/50 = 100.0% (порог 80%) — PASS

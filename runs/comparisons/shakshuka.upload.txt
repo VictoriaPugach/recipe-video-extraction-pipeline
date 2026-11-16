@@ -1,0 +1,7 @@
+Command:
+python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/shakshuka.json runs/shakshuka.upload.json
+
+Эталон:   data/expected_outputs/shakshuka.json
+Результат: runs/shakshuka.upload.json
+Пути в объединении: 40; совпадений: 40; расхождений: 0.
+Совпадение: 40/40 = 100.0% (порог 80%) — PASS

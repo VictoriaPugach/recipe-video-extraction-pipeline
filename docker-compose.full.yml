@@ -96,16 +96,16 @@ services:
       - hf-cache:/home/appuser/.cache/huggingface
       - paddleocr-cache:/home/appuser/.paddleocr
       - paddlex-cache:/home/appuser/.paddlex
-      # YouTube cookies (bot check): put cookies.txt next to this file,
-      # uncomment the mount and set YTDLP_COOKIES_FILE=/cookies.txt in .env.
+      # YouTube cookies (bot check): put cookies.txt next to this file;
+      # the read-only mount below and YTDLP_COOKIES_FILE=/cookies.txt are enabled.
       # Cookies are account credentials — keep the file out of git.
       # ":ro" is fine (docker secrets too): yt-dlp gets a private temp copy
       # per run (_private_cookies_file); the mounted file is only ever read.
       # Update cookies by replacing the file — no container restart needed.
       - ./cookies.txt:/cookies.txt:ro
       # Debug artifacts (DEBUG_ARTIFACTS_DIR in .env): transcript.txt and
-      # screen_text.txt per run land in ./runs/debug on the host. Uncomment
-      # together with DEBUG_ARTIFACTS_DIR=/runs/debug.
+      # screen_text.txt per run land in ./runs/debug on the host. The mount is
+      # enabled; also set DEBUG_ARTIFACTS_DIR=/runs/debug in .env.
       - ./runs/debug:/runs/debug
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]

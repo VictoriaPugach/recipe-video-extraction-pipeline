@@ -1,0 +1,251 @@
+ Image fropti-egress-test-api Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 655B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 6.80kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 156B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 3.28kB done
+#5 DONE 0.0s
+
+#6 [ 1/12] FROM docker.io/library/python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df
+#6 resolve docker.io/library/python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df 0.0s done
+#6 DONE 0.0s
+
+#7 [ 4/12] COPY requirements.txt requirements-ml.txt ./
+#7 CACHED
+
+#8 [ 7/12] RUN useradd --create-home appuser
+#8 CACHED
+
+#9 [ 3/12] RUN apt-get update     && apt-get install -y --no-install-recommends curl ca-certificates gnupg     && install -d -m 0755 /etc/apt/keyrings     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main"        > /etc/apt/sources.list.d/nodesource.list     && apt-get update     && apt-get install -y --no-install-recommends          ffmpeg libgl1 libglib2.0-0 libgomp1 libblas3 liblapack3 zlib1g nodejs     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [11/12] RUN if [ "slim" = "full" ]; then         for m in small; do             echo "Pre-downloading faster-whisper model: $m (small ~460 MB, medium ~1.5 GB)..."             && python -c "from faster_whisper import WhisperModel; WhisperModel('$m', device='cpu', compute_type='int8')"             || exit 1;         done         && echo "Pre-downloading PaddleOCR model (lang=ru, ~80 MB)..."         && python -c "from src.extractors.ocr import _get_reader; _get_reader()"         && echo "Pre-downloading PaddleOCR model (lang=en, ~80 MB)..."         && OCR_LANG=en python -c "from src.extractors.ocr import _get_reader; _get_reader()";     fi
+#10 CACHED
+
+#11 [10/12] COPY src/extractors/__init__.py src/extractors/ocr.py ./src/extractors/
+#11 CACHED
+
+#12 [ 2/12] WORKDIR /app
+#12 CACHED
+
+#13 [ 9/12] COPY src/__init__.py src/config.py src/errors.py ./src/
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir -p "/home/appuser/.cache/huggingface" "/home/appuser/.paddleocr" "/home/appuser/.paddlex"
+#14 CACHED
+
+#15 [ 5/12] COPY packages/fropti-core-contracts ./packages/fropti-core-contracts
+#15 CACHED
+
+#16 [ 6/12] RUN pip install --no-cache-dir -r requirements.txt     && if [ "slim" = "full" ]; then pip install --no-cache-dir -r requirements-ml.txt; fi     && pip install --no-cache-dir setuptools wheel
+#16 CACHED
+
+#17 [12/12] COPY src ./src
+#17 CACHED
+
+#18 exporting to image
+#18 exporting layers done
+#18 exporting manifest sha256:780a7a77c217e06c0b1f991a493536f311567818d996f124d5ce1967c33577dc done
+#18 exporting config sha256:cc08f250ff7cdcfb8e9c6ae69ddafe0effddae7f5c04e985ea42d9c0994037b8 done
+#18 exporting attestation manifest sha256:0bc53fc46d27b24f44407b15764c8ccbf03a7607e566c405a7bf9d45e7ec24b7 0.0s done
+#18 exporting manifest list sha256:ff504cd12a3d7275227851a14bf21b4729c161cef3ca37fbc2e3bd5e8fe2a063
+#18 exporting manifest list sha256:ff504cd12a3d7275227851a14bf21b4729c161cef3ca37fbc2e3bd5e8fe2a063 0.0s done
+#18 naming to docker.io/library/fropti-egress-test-api:latest done
+#18 unpacking to docker.io/library/fropti-egress-test-api:latest done
+#18 DONE 0.1s
+
+#19 resolving provenance for metadata file
+#19 DONE 0.0s
+ Image fropti-egress-test-api Built 
+ Volume fropti-egress-test_paddleocr-cache Creating 
+ Volume fropti-egress-test_paddleocr-cache Creating 
+ Network fropti-egress-test_external Creating 
+ Network fropti-egress-test_internal Creating 
+ Volume fropti-egress-test_paddlex-cache Creating 
+ Network fropti-egress-test_internal Creating 
+ Network fropti-egress-test_external Creating 
+ Volume fropti-egress-test_paddlex-cache Creating 
+ Volume fropti-egress-test_hf-cache Creating 
+ Volume fropti-egress-test_hf-cache Creating 
+ Volume fropti-egress-test_paddlex-cache Created 
+ Volume fropti-egress-test_paddlex-cache Created 
+ Volume fropti-egress-test_paddleocr-cache Created 
+ Volume fropti-egress-test_paddleocr-cache Created 
+ Volume fropti-egress-test_hf-cache Created 
+ Volume fropti-egress-test_hf-cache Created 
+ Network fropti-egress-test_external Created 
+ Network fropti-egress-test_external Created 
+ Network fropti-egress-test_internal Created 
+ Network fropti-egress-test_internal Created 
+ Container fropti-egress-test-egress-proxy-1 Creating 
+ Container fropti-egress-test-egress-proxy-1 Created 
+ Container fropti-egress-test-api-1 Creating 
+ Container fropti-egress-test-api-1 Created 
+ Container fropti-egress-test-egress-proxy-1 Starting 
+ Container fropti-egress-test-egress-proxy-1 Started 
+ Container fropti-egress-test-egress-proxy-1 Waiting 
+ Container fropti-egress-test-egress-proxy-1 Healthy 
+ Container fropti-egress-test-api-1 Starting 
+ Container fropti-egress-test-api-1 Started 
+2026/11/16 01:58:37| Processing Configuration File: /etc/squid/squid.conf (depth 0)
+2026/11/16 01:58:37| Processing: http_port 3128
+2026/11/16 01:58:37| Processing: acl app_net src 172.30.5.0/24
+2026/11/16 01:58:37| Processing: acl localhost src 127.0.0.1/32 ::1
+2026/11/16 01:58:37| WARNING: (B) '127.0.0.1' is a subnetwork of (A) '127.0.0.1'
+2026/11/16 01:58:37| WARNING: because of this '127.0.0.1' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove '127.0.0.1' from the ACL named 'localhost'
+2026/11/16 01:58:37| WARNING: (B) '127.0.0.1' is a subnetwork of (A) '127.0.0.1'
+2026/11/16 01:58:37| WARNING: because of this '127.0.0.1' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove '127.0.0.1' from the ACL named 'localhost'
+2026/11/16 01:58:37| WARNING: (B) '::1' is a subnetwork of (A) '::1'
+2026/11/16 01:58:37| WARNING: because of this '::1' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove '::1' from the ACL named 'localhost'
+2026/11/16 01:58:37| WARNING: (B) '::1' is a subnetwork of (A) '::1'
+2026/11/16 01:58:37| WARNING: because of this '::1' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove '::1' from the ACL named 'localhost'
+2026/11/16 01:58:37| Processing: acl manager proto cache_object
+2026/11/16 01:58:37| WARNING: UPGRADE: ACL 'manager' is now a built-in ACL. Remove it from your config file.
+2026/11/16 01:58:37| Processing: acl CONNECT method CONNECT
+2026/11/16 01:58:37| Processing: acl Safe_ports port 80
+2026/11/16 01:58:37| Processing: acl Safe_ports port 443
+2026/11/16 01:58:37| Processing: acl SSL_ports port 443
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 0.0.0.0/8
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 10.0.0.0/8
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 100.64.0.0/10
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 127.0.0.0/8
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 169.254.0.0/16
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 172.16.0.0/12
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 192.0.0.0/24
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 192.0.2.0/24
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 192.88.99.0/24
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 192.168.0.0/16
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 198.18.0.0/15
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 198.51.100.0/24
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 203.0.113.0/24
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 224.0.0.0/4
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 240.0.0.0/4
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::/96
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 64:ff9b::/96
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 64:ff9b:1::/48
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 100::/64
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 2001::/23
+2026/11/16 01:58:37| Processing: acl blocked_dst dst 2001:db8::/32
+2026/11/16 01:58:37| Processing: acl blocked_dst dst fc00::/7
+2026/11/16 01:58:37| Processing: acl blocked_dst dst fe80::/10
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ff00::/8
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:0.0.0.0/104
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:0.0.0.0/104'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:10.0.0.0/104
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:10.0.0.0/104'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:100.64.0.0/106
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:100.64.0.0/106'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:127.0.0.0/104
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:127.0.0.0/104'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:169.254.0.0/112
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:169.254.0.0/112'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:172.16.0.0/108
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:172.16.0.0/108'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:192.0.0.0/120
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:192.0.0.0/120'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:192.0.2.0/120
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:192.0.2.0/120'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:192.88.99.0/120
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:192.88.99.0/120'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:192.168.0.0/112
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:192.168.0.0/112'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:198.18.0.0/111
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:198.18.0.0/111'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:198.51.100.0/120
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:198.51.100.0/120'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:203.0.113.0/120
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:203.0.113.0/120'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:224.0.0.0/100
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:224.0.0.0/100'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: acl blocked_dst dst ::ffff:240.0.0.0/100
+2026/11/16 01:58:37| WARNING: aclIpParseIpData: Netmask masks away part of the specified IP in '::ffff:240.0.0.0/100'
+2026/11/16 01:58:37| WARNING: (B) 'ff00::/8' is a subnetwork of (A) '::/0'
+2026/11/16 01:58:37| WARNING: because of this '::/0' is ignored to keep splay tree searching predictable
+2026/11/16 01:58:37| WARNING: You should probably remove 'ff00::/8' from the ACL named 'blocked_dst'
+2026/11/16 01:58:37| Processing: http_access allow localhost manager
+2026/11/16 01:58:37| Processing: http_access deny manager
+2026/11/16 01:58:37| Processing: http_access deny !Safe_ports
+2026/11/16 01:58:37| Processing: http_access deny CONNECT !SSL_ports
+2026/11/16 01:58:37| Processing: http_access deny blocked_dst
+2026/11/16 01:58:37| Processing: http_access allow app_net
+2026/11/16 01:58:37| Processing: http_access deny all
+2026/11/16 01:58:37| Processing: cache deny all
+2026/11/16 01:58:37| Processing: access_log none
+2026/11/16 01:58:37| Processing: cache_log /dev/null
+2026/11/16 01:58:37| Processing: forwarded_for delete
+2026/11/16 01:58:37| Processing: via off
+2026/11/16 01:58:37| Processing: icp_port 0
+2026/11/16 01:58:37| Processing: htcp_port 0
+2026/11/16 01:58:37| Processing: snmp_port 0
+2026/11/16 01:58:37| Processing: shutdown_lifetime 3 seconds
+2026/11/16 01:58:37| WARNING: HTTP requires the use of Via
+[1/5] Public HTTPS through the proxy must succeed
+PASS: allowed public destination
+[2/5] Loopback and cloud metadata destinations must be denied
+PASS: loopback denied
+PASS: link-local metadata denied
+[3/5] A redirect to a private destination must be denied
+PASS: redirect to loopback denied
+[4/5] Non-HTTP ports must be denied
+PASS: unsafe destination port denied
+[5/5] Bypassing the proxy must not provide direct internet access
+PASS: direct egress unavailable
+All controlled-egress integration checks passed

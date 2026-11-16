@@ -30,10 +30,11 @@
 - Исправлен ложный PASS компаратора: пропущенные/лишние шаги остаются расхождениями при `--skip-instructions`, а `--absent-equals-null` не засчитывает поля полностью отсутствующего элемента списка.
 - Примеры curl в документации заменены на `scripts/upload.sh`: при отсутствии файла печатает `error: file not found: <путь>` вместо невнятного `curl: (26)`.
 - Healthcheck egress-прокси не использует `squidclient`: в образе `ubuntu/squid` его нет (как и curl/wget), контейнер помечался unhealthy и API не стартовал. Щуп — запрос к manager-порту через bash `/dev/tcp` (bash есть в базовом образе); manager-страница отдаётся из памяти squid, наружных соединений проба не делает.
+- `scripts/test_egress.sh` отключает MSYS path conversion: Git Bash на Windows больше не превращает контейнерный `/dev/null` в Windows-путь перед `docker compose exec`.
 
 ### Безопасность
 
-- Схема и allowlist исходного хоста проверяются до метаданных и до скачивания; обязательный `EGRESS_PROXY_URL`, internal-only сеть API и Squid-фильтрация DNS/IP-адресов на каждом запросе закрывают DNS-rebinding и редиректы. Сетевая проверка — `scripts/test_egress.sh`, границы — в [architecture.md](docs/architecture.md).
+- Схема и allowlist исходного хоста проверяются до метаданных и до скачивания; обязательный `EGRESS_PROXY_URL`, internal-only сеть API и Squid-фильтрация DNS/IP-адресов на каждом запросе закрывают DNS-rebinding и редиректы. 16.11.2026 `scripts/test_egress.sh` прошёл все пять сетевых проверок; журнал `runs/controlled-egress.log` прилагается к PR. Границы — в [architecture.md](docs/architecture.md).
 - Проверка `YTDLP_COOKIES_FILE` до вызова yt-dlp: каталог вместо файла (пустое монтирование Docker), нечитаемый файл, не-Netscape формат (JSON-экспорт, UTF-16) — всё отдаётся понятной `download_failed` с подсказкой.
 - Cookies аккаунта не коммитятся (`.gitignore` закрывает `cookies*.txt`); обход ограничений платформ не встраивается ([SECURITY.md](SECURITY.md)).
 
@@ -48,12 +49,12 @@
 ### Инфраструктура
 
 - Кэши моделей вынесены в именованные docker-тома (`hf-cache`, `paddleocr-cache`, `paddlex-cache`) — переживают `down` и пересоздание контейнера.
-- `/data/input_videos` удалён из `.gitignore`: `manifest.json` и `provenance.md` набора приёмки коммитятся в репозиторий. Медиафайлы коммитятся только при подтверждённом праве (CC-BY или собственная запись), остальные остаются локальными с зафиксированным источником (правила — в README папки).
+- В `data/input_videos/` сохранены пять MP4 с согласованным ревьюерами размещением; `manifest.json` и `provenance.md` исправлены: три основных случая, два дополнительных, фактические имена, длительности и источники, включая Butter Chicken.
 - Двойной вызов yt-dlp для URL (метаданные + скачивание): лимит длительности обязан срабатывать до скачивания.
 
 ### Документация
 
-- Добавлен [docs/real-testing.md](docs/real-testing.md) — протокол реальной проверки: три типа входа, ручные эталоны, сравнение через `compare_gold.py`.
+- Добавлен [docs/real-testing.md](docs/real-testing.md) — протокол реальной проверки: три типа входа, ручные эталоны, сравнение через `compare_gold.py`. Основной набор — Shakshuka, Plov и Creamy Chickpea; зафиксированы фактические upload-результаты 100,0%, 85,0% и 96,8%, а Chocolate Cake и Butter Chicken отделены как дополнительные эксперименты. Для существующих результатов добавлены отчёты `runs/comparisons/`; отсутствующие CLI/URL/STT/OCR-доказательства явно не отмечены как выполненные; успешная сетевая egress-проверка зафиксирована отдельно.
 - Документация приведена к состоянию готовой реализации (убраны упоминания каркаса и `501`); OpenAPI дополнен `empty_file` и `internal_error`.
 - Раздел «Безопасность» в [architecture.md](docs/architecture.md); суммарное время запроса с расчётом повторов — в [api_reference.md](docs/api_reference.md) и [faq.md](docs/faq.md), ограничения MVP — в «Известных ограничениях».
 - Комментарии в `src/` и тестах — короткие факты; история изменений — в этом файле, не в коде.

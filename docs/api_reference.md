@@ -40,10 +40,10 @@ curl -i -X POST http://localhost:8000/extract \
 
 ```bash
 curl -i -X POST http://localhost:8000/extract/upload \
-  -F 'file=@data/input_videos/pasta.mp4'
+  -F 'file=@data/input_videos/shakshuka.mp4'
 ```
 
-Файл `pasta.mp4` пока не включен в репозиторий: сначала добавь разрешенное видео или замени путь своим. Не задавай `Content-Type` вручную: клиент добавит multipart boundary. Если путь не существует, curl отвечает «(26) Failed to open/read local data from file/application», не называя файл, — запрос до сервера не доходит; обёртка `scripts/upload.sh <файл>` проверяет файл до вызова curl и печатает `error: file not found: …`.
+Файл `shakshuka.mp4` включён в валидационный набор ветки. Не задавай `Content-Type` вручную: клиент добавит multipart boundary. Если путь не существует, curl отвечает «(26) Failed to open/read local data from file/application», не называя файл, — запрос до сервера не доходит; обёртка `scripts/upload.sh <файл>` проверяет файл до вызова curl и печатает `error: file not found: …`.
 
 | Поле | Тип | Обязательность |
 | --- | --- | --- |

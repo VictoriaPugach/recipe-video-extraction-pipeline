@@ -56,3 +56,8 @@ def test_squid_denies_non_public_destinations_before_allow():
     assert "http_access deny CONNECT !SSL_ports" in text
     assert "cache deny all" in text
     assert "access_log none" in text
+
+
+def test_egress_script_preserves_linux_paths_on_windows():
+    text = (ROOT / "scripts" / "test_egress.sh").read_text(encoding="utf-8")
+    assert "export MSYS_NO_PATHCONV=1" in text

@@ -4,6 +4,9 @@
 # its containers/networks/volumes on exit; it does not stop the normal stack.
 set -euo pipefail
 
+# Git Bash/MSYS must pass Linux paths such as /dev/null to containers unchanged.
+export MSYS_NO_PATHCONV=1
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
