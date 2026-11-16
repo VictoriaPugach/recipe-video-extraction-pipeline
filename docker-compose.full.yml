@@ -1,0 +1,143 @@
+# Full build: real STT + OCR + LLM + yt-dlp.
+# Requires .env with LLM_API_KEY / LLM_BASE_URL / LLM_MODEL.
+#
+# Usage:
+#   cp .env.example .env  # then edit .env with real LLM credentials
+#   # The Whisper model baked into the image is small (~460 MB) — see
+#   # WHISPER_PRELOAD_MODELS below for how to bake medium as well.
+#   docker compose -f docker-compose.full.yml up --build
+#   curl http://127.0.0.1:8000/health
+#   # upload a video:
+#   curl -X POST http://127.0.0.1:8000/extract/upload -F 'file=@data/input_videos/pasta.mp4'
+#
+# NOTE: model caches (HuggingFace ~460 MB for Whisper, PaddleOCR ~80 MB per
+# language) live in named volumes, so they survive `docker compose down`,
+# container recreation and image rebuilds. On the first `up` Docker copies the
+# models preloaded at build time into the volumes; after that nothing is
+# re-downloaded. The volumes are deleted only by `docker compose down -v` or
+# `docker volume rm`. CAVEAT: the copy-on-first-`up` happens only into an EMPTY
+# volume — if you bake extra models later (WHISPER_PRELOAD_MODELS), an already
+# filled volume is not extended; wipe it (`down -v`) or accept a one-time
+# runtime download of the missing model.
+services:
+  egress-proxy:
+    image: ubuntu/squid:6.6-24.04_edge
+    volumes:
+      - ./deploy/egress/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      - internal
+      - external
+    # No published port: the proxy is reachable only by the application.
+    # ubuntu/squid ships no squidclient/curl/wget: probe the manager port with
+    # bash /dev/tcp (bash is in the base image). The manager page is served
+    # from squid memory, so the probe makes no outbound connection.
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3128 && printf 'GET cache_object://localhost/info HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '^HTTP/' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      args:
+        BUILD_MODE: full
+        # Two independent Whisper knobs — the names sound similar, the roles differ:
+        #
+        # WHISPER_PRELOAD_MODELS (below) = what gets PUT INSIDE the image at
+        #   build time. A baked model starts instantly and works offline;
+        #   each baked model costs image size (~460 MB small, ~1.5 GB medium).
+        #
+        # WHISPER_MODEL (below) = which model RUNS. The .env value wins
+        #   (env_file overrides the image ENV); the value below is only the
+        #   image fallback for when .env omits the variable.
+        #   Running a model that was NOT baked: it downloads ONCE at the first
+        #   request into the hf-cache volume and survives restarts — no rebuild.
+        #
+        # Current setup = the original behaviour: bake small, run small.
+        WHISPER_MODEL: small
+        # Build-time bake list (see above). "small" keeps the image as light as
+        # before. To also bake medium (+~1.5 GB image, slower build, ~2.5-3x
+        # slower CPU inference) set it to "small medium".
+        WHISPER_PRELOAD_MODELS: "small"
+    # No published port here: `internal` is an internal-only network, so Docker
+    # cannot publish ports from it. The api-gateway service below forwards
+    # 127.0.0.1:8000 on the host to this container.
+    env_file:
+      - .env
+    environment:
+      # Explicit proxy for yt-dlp; upper/lowercase variables also cover LLM and
+      # optional runtime model downloads. Local health checks bypass the proxy.
+      EGRESS_PROXY_URL: http://egress-proxy:3128
+      HTTP_PROXY: http://egress-proxy:3128
+      HTTPS_PROXY: http://egress-proxy:3128
+      http_proxy: http://egress-proxy:3128
+      https_proxy: http://egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1,::1
+      no_proxy: localhost,127.0.0.1,::1
+      YTDLP_COOKIES_FILE: /cookies.txt
+    depends_on:
+      egress-proxy:
+        condition: service_healthy
+    networks:
+      - internal
+    volumes:
+      # Model caches (Whisper + PaddleOCR) live in named volumes, so they
+      # outlive the container: restarts and rebuilds never re-download them.
+      # On the first `up` with an EMPTY volume, Docker copies in whatever the
+      # image keeps at that path — that's why the mountpoints are pre-created
+      # in the Dockerfile as appuser: the copied files belong to appuser and
+      # stay writable (a mountpoint missing from the image would be created
+      # root-owned, and the first model download would fail).
+      # After that the volume changes only from inside the app (e.g. the
+      # one-time download of a non-baked model). See NOTE at the top of this
+      # file: an already-filled volume is NOT extended by a rebuild.
+      - hf-cache:/home/appuser/.cache/huggingface
+      - paddleocr-cache:/home/appuser/.paddleocr
+      - paddlex-cache:/home/appuser/.paddlex
+      # YouTube cookies (bot check): put cookies.txt next to this file;
+      # the read-only mount below and YTDLP_COOKIES_FILE=/cookies.txt are enabled.
+      # Cookies are account credentials — keep the file out of git.
+      # ":ro" is fine (docker secrets too): yt-dlp gets a private temp copy
+      # per run (_private_cookies_file); the mounted file is only ever read.
+      # Update cookies by replacing the file — no container restart needed.
+      - ./cookies.txt:/cookies.txt:ro
+      # Debug artifacts (DEBUG_ARTIFACTS_DIR in .env): transcript.txt and
+      # screen_text.txt per run land in ./runs/debug on the host. The mount is
+      # enabled; also set DEBUG_ARTIFACTS_DIR=/runs/debug in .env.
+      - ./runs/debug:/runs/debug
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  # TCP forwarder: publishes the API on the host while keeping `api` itself
+  # on the internal-only network (its only way out stays the egress proxy).
+  api-gateway:
+    image: alpine/socat
+    command: tcp-listen:8000,fork,reuseaddr tcp:api:8000
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+      - external
+
+volumes:
+  hf-cache:
+  paddleocr-cache:
+  paddlex-cache:
+
+networks:
+  internal:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.5.0/24
+  external:
+    driver: bridge

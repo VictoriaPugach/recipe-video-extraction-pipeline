@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0.0",
+  "title": "real homemade plov",
+  "servings": null,
+  "ingredients": [
+    {
+      "name": "beef",
+      "quantity": {
+        "value": 907.0,
+        "unit": "g"
+      },
+      "note": "2 pounds of beef"
+    },
+    {
+      "name": "onions",
+      "quantity": {
+        "value": 2.0,
+        "unit": "pcs"
+      },
+      "note": "large onions, thinly sliced"
+    },
+    {
+      "name": "carrots",
+      "quantity": {
+        "value": 3.0,
+        "unit": "pcs"
+      },
+      "note": "large carrots"
+    },
+    {
+      "name": "avocado oil",
+      "quantity": {
+        "value": 120.0,
+        "unit": "ml"
+      },
+      "note": "half of the cup of avocado oil"
+    },
+    {
+      "name": "black pepper",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "special spice for plov",
+      "quantity": null,
+      "note": "приправа для плова"
+    },
+    {
+      "name": "hot water",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "salt",
+      "quantity": null,
+      "note": "good amount of salt"
+    },
+    {
+      "name": "garlic",
+      "quantity": {
+        "value": 1.0,
+        "unit": "pcs"
+      },
+      "note": "Whole head of garlic"
+    },
+    {
+      "name": "basmati rice",
+      "quantity": {
+        "value": 480.0,
+        "unit": "ml"
+      },
+      "note": "2 cups of basmati rice"
+    },
+    {
+      "name": "tomatoes",
+      "quantity": null,
+      "note": "thinly sliced tomatoes"
+    },
+    {
+      "name": "onion",
+      "quantity": null,
+      "note": "super thinly sliced onion for salad"
+    },
+    {
+      "name": "walnut oil",
+      "quantity": null,
+      "note": "a little bit of oil"
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "Cut the beef into pieces and slice the onions and carrots on matchsticks.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Preheat the pan on very high, add half of the cup of avocado oil.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Fry just half of the meat till it's golden.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "In the same oil cook the onions.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add the carrots and cook for 7 or 10 minutes till the carrots will get softened.",
+      "duration_seconds": 420
+    },
+    {
+      "instruction": "Return the meat, add black pepper and special spice for plov.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Mix it together, add hot water and a good amount of salt, and simmer it for 40 minutes.",
+      "duration_seconds": 2400
+    },
+    {
+      "instruction": "Add a whole head of garlic in the middle.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add 2 cups of basmati rice and hot water so that it covers the rice on a half inch.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Cook it uncovered on medium heat till most of the water will disappear.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Cover it with the lid, lower the temperature and simmer it for 25 more minutes.",
+      "duration_seconds": 1500
+    },
+    {
+      "instruction": "Make a salad by mixing thinly sliced tomatoes with super thinly sliced onion, salt and walnut oil to serve on the side.",
+      "duration_seconds": null
+    }
+  ],
+  "source": {
+    "type": "upload"
+  },
+  "total_time_minutes": null
+}

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src import api, downloader, main, pipeline
+from src.errors import MediaProcessingError
 from src.models import Recipe
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +29,7 @@ def test_upload_requires_file():
 
 @pytest.mark.parametrize(("content", "status", "code"), [
     (b"", 400, "empty_file"),
-    (b"1234", 501, "pipeline_not_implemented"),
+    (b"1234", 400, "video_unreadable"),
     (b"12345", 413, "file_too_large"),
 ])
 def test_upload_size_limits(monkeypatch, content, status, code):
@@ -62,9 +63,12 @@ def test_upload_passes_file_and_cleans_up_after_success(monkeypatch):
     assert not paths[0].parent.exists()
 
 
-@pytest.mark.parametrize(("duration", "status"), [(180, 501), (180.01, 400)])
+@pytest.mark.parametrize(("duration", "status"), [(180, 200), (180.01, 400)])
 def test_upload_duration_limit_and_cleanup(monkeypatch, duration, status):
     paths = []
+    recipe_data = json.loads((ROOT / "data/expected_outputs/pasta.json").read_text())
+    recipe_data["source"] = {"type": "upload"}
+    recipe = Recipe.model_validate(recipe_data)
 
     def probe(source):
         assert isinstance(source, Path)
@@ -73,6 +77,10 @@ def test_upload_duration_limit_and_cleanup(monkeypatch, duration, status):
         return duration
 
     monkeypatch.setattr(downloader, "probe_duration", probe)
+    monkeypatch.setattr(pipeline.stt_mod, "transcribe", lambda path: "речь")
+    monkeypatch.setattr(pipeline.frames_mod, "extract_frames", lambda path, out: [])
+    monkeypatch.setattr(pipeline.ocr_mod, "recognize_text", lambda frames: "")
+    monkeypatch.setattr(pipeline.fusion, "fuse_recipe", lambda t, o, s: recipe)
     response = client.post("/extract/upload", files={"file": ("sample.mp4", b"video", "video/mp4")})
     assert response.status_code == status
     assert len(paths) == 1
@@ -111,11 +119,13 @@ def test_cli_passes_local_file_to_pipeline(monkeypatch, tmp_path, capsys):
 
     def extract(source):
         paths.append(source)
-        raise NotImplementedError("Local extraction is not implemented")
+        # Искусственная ошибка: проверяем конвертацию AppError -> код выхода CLI,
+        # а не обработку реального сбоя (он покрыт другими тестами).
+        raise MediaProcessingError("искусственная ошибка для проверки CLI")
 
     monkeypatch.setattr(pipeline, "extract_recipe", extract)
     monkeypatch.setattr(sys, "argv", ["fropti", "--file", str(video_path)])
     assert main.main() == 1
     assert paths == [video_path]
     assert video_path.read_bytes() == b"video"
-    assert "Local extraction is not implemented" in capsys.readouterr().err
+    assert "[media_processing_failed]" in capsys.readouterr().err

@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "title": "Creamy Chickpea Skillet",
+  "servings": null,
+  "ingredients": [
+    {
+      "name": "Garlic",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Tomatoes",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Spices",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Chickpeas",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Coconut milk",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Spinach",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "Basil",
+      "quantity": null,
+      "note": null
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "Add garlic to the pan.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add tomatoes and let them get soft and burst.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add spices and chickpeas.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Pour in coconut milk and simmer.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Add spinach and let it wilt in.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Spoon it up.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Top with basil.",
+      "duration_seconds": null
+    }
+  ],
+  "source": {
+    "type": "upload"
+  },
+  "total_time_minutes": null
+}

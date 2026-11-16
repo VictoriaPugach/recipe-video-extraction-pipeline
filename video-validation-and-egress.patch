@@ -1,0 +1,741 @@
+diff --git a/.env.example b/.env.example
+index 2caf82b..f514933 100644
+--- a/.env.example
++++ b/.env.example
+@@ -69,7 +69,7 @@ YTDLP_JS_RUNTIME=node
+ # cookies извлечение по URL падает с download_failed. Экспорт — расширением
+ # «Get cookies.txt LOCALLY». Файл равнозначен доступу к аккаунту YouTube:
+ # держите его вне репозитория и не коммитьте; в Docker смонтируйте внутрь
+-# контейнера (закомментированный пример в compose-файлах) и укажите путь
++# контейнера (в docker-compose.full.yml монтирование уже включено) и укажите путь
+ # внутри контейнера. Монтирование «:ro» и docker secrets работают: yt-dlp
+ # получает личную копию файла на каждый запуск, исходник только читается
+ # (одновременные запросы не пишут в один файл — гонки записи нет). Копия
+@@ -127,7 +127,7 @@ LLM_TEMPERATURE=0.0
+ # (расшифровка речи) и screen_text.txt (текст с экрана) в свой подкаталог
+ # run-*. Нужно для приёмки (docs/real-testing.md) и разбора расхождений
+ # с эталоном. В Docker смонтируйте каталог внутрь контейнера
+-# (закомментированный том в docker-compose.full.yml). Файлы могут содержать
++# (том ./runs/debug в docker-compose.full.yml уже подключён). Файлы могут содержать
+ # персональные данные из речи — в репозиторий коммитить только обезличенные.
+ # Пусто = артефакты не сохраняются.
+ # DEBUG_ARTIFACTS_DIR=/runs/debug
+\ No newline at end of file
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 290d577..3c8d6d2 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -30,10 +30,11 @@
+ - Исправлен ложный PASS компаратора: пропущенные/лишние шаги остаются расхождениями при `--skip-instructions`, а `--absent-equals-null` не засчитывает поля полностью отсутствующего элемента списка.
+ - Примеры curl в документации заменены на `scripts/upload.sh`: при отсутствии файла печатает `error: file not found: <путь>` вместо невнятного `curl: (26)`.
+ - Healthcheck egress-прокси не использует `squidclient`: в образе `ubuntu/squid` его нет (как и curl/wget), контейнер помечался unhealthy и API не стартовал. Щуп — запрос к manager-порту через bash `/dev/tcp` (bash есть в базовом образе); manager-страница отдаётся из памяти squid, наружных соединений проба не делает.
++- `scripts/test_egress.sh` отключает MSYS path conversion: Git Bash на Windows больше не превращает контейнерный `/dev/null` в Windows-путь перед `docker compose exec`.
+ 
+ ### Безопасность
+ 
+-- Схема и allowlist исходного хоста проверяются до метаданных и до скачивания; обязательный `EGRESS_PROXY_URL`, internal-only сеть API и Squid-фильтрация DNS/IP-адресов на каждом запросе закрывают DNS-rebinding и редиректы. Сетевая проверка — `scripts/test_egress.sh`, границы — в [architecture.md](docs/architecture.md).
++- Схема и allowlist исходного хоста проверяются до метаданных и до скачивания; обязательный `EGRESS_PROXY_URL`, internal-only сеть API и Squid-фильтрация DNS/IP-адресов на каждом запросе закрывают DNS-rebinding и редиректы. 16.11.2026 `scripts/test_egress.sh` прошёл все пять сетевых проверок; журнал `runs/controlled-egress.log` прилагается к PR. Границы — в [architecture.md](docs/architecture.md).
+ - Проверка `YTDLP_COOKIES_FILE` до вызова yt-dlp: каталог вместо файла (пустое монтирование Docker), нечитаемый файл, не-Netscape формат (JSON-экспорт, UTF-16) — всё отдаётся понятной `download_failed` с подсказкой.
+ - Cookies аккаунта не коммитятся (`.gitignore` закрывает `cookies*.txt`); обход ограничений платформ не встраивается ([SECURITY.md](SECURITY.md)).
+ 
+@@ -48,12 +49,12 @@
+ ### Инфраструктура
+ 
+ - Кэши моделей вынесены в именованные docker-тома (`hf-cache`, `paddleocr-cache`, `paddlex-cache`) — переживают `down` и пересоздание контейнера.
+-- `/data/input_videos` удалён из `.gitignore`: `manifest.json` и `provenance.md` набора приёмки коммитятся в репозиторий. Медиафайлы коммитятся только при подтверждённом праве (CC-BY или собственная запись), остальные остаются локальными с зафиксированным источником (правила — в README папки).
++- В `data/input_videos/` сохранены пять MP4 с согласованным ревьюерами размещением; `manifest.json` и `provenance.md` исправлены: три основных случая, два дополнительных, фактические имена, длительности и источники, включая Butter Chicken.
+ - Двойной вызов yt-dlp для URL (метаданные + скачивание): лимит длительности обязан срабатывать до скачивания.
+ 
+ ### Документация
+ 
+-- Добавлен [docs/real-testing.md](docs/real-testing.md) — протокол реальной проверки: три типа входа, ручные эталоны, сравнение через `compare_gold.py`.
++- Добавлен [docs/real-testing.md](docs/real-testing.md) — протокол реальной проверки: три типа входа, ручные эталоны, сравнение через `compare_gold.py`. Основной набор — Shakshuka, Plov и Creamy Chickpea; зафиксированы фактические upload-результаты 100,0%, 85,0% и 96,8%, а Chocolate Cake и Butter Chicken отделены как дополнительные эксперименты. Для существующих результатов добавлены отчёты `runs/comparisons/`; отсутствующие CLI/URL/STT/OCR-доказательства явно не отмечены как выполненные; успешная сетевая egress-проверка зафиксирована отдельно.
+ - Документация приведена к состоянию готовой реализации (убраны упоминания каркаса и `501`); OpenAPI дополнен `empty_file` и `internal_error`.
+ - Раздел «Безопасность» в [architecture.md](docs/architecture.md); суммарное время запроса с расчётом повторов — в [api_reference.md](docs/api_reference.md) и [faq.md](docs/faq.md), ограничения MVP — в «Известных ограничениях».
+ - Комментарии в `src/` и тестах — короткие факты; история изменений — в этом файле, не в коде.
+diff --git a/README.md b/README.md
+index b91a136..9f9e529 100644
+--- a/README.md
++++ b/README.md
+@@ -21,9 +21,9 @@ Fropti помогает планировать домашнее питание:
+ 
+ | В репозитории | Следующий этап |
+ | --- | --- |
+-| FastAPI, CLI, Docker, CI, тесты и обработка границ API | Три разрешённых видео и ручные эталоны |
+-| Общий пакет `fropti-core-contracts` 1.0.0 и JSON Schema | Сквозные прогоны и сравнение с эталонами |
+-| Безопасный загрузчик URL, STT, выбор кадров, OCR, LLM и обработка ошибок | Демонстрационный ролик по шаблону PR |
++| FastAPI, CLI, Docker, CI, тесты и обработка границ API | Завершить CLI/URL-проверки и приложить STT/OCR-артефакты |
++| Общий пакет `fropti-core-contracts` 1.0.0 и JSON Schema | Обновить JSON и отчёт последнего Plov-запуска |
++| Безопасный загрузчик URL, STT, выбор кадров, OCR, LLM и обработка ошибок | Приложить egress-журнал и записать демонстрацию по шаблону PR |
+ 
+ ## Быстрый старт
+ 
+@@ -71,11 +71,11 @@ make run
+ Статус отмечен чекбоксами; детали — в [src/TODO.md](src/TODO.md).
+ 
+ 1. [x] Сверить границу трёх модулей: прочитать [Recipe 1.0.0](docs/data_schema.md), запустить валидатор пакета на трёх JSON из `data/expected_outputs/` и не создавать собственную модель рецепта. Результат: примеры проходят общую схему без локальных расширений.
+-2. [ ] Подготовить входные данные: добавить три разрешённых коротких видео, заполнить [manifest](data/input_videos/manifest.example.json) и вручную сверить ожидаемые JSON. Результат: у каждого видео есть источник, эталон и понятные поля для проверки (план — в [real-testing.md](docs/real-testing.md)).
++2. [x] Подготовить входные данные: три основных MP4 включены в ветку, заполнены [manifest](data/input_videos/manifest.json), источники и ручные эталоны; покрыты аудио, текст и их сочетание. Размещение согласовано с ревьюерами. Происхождение и оставшиеся проверки — в [provenance](data/input_videos/provenance.md) и [real-testing.md](docs/real-testing.md).
+ 3. [x] Реализовать безопасный вход: в `src/downloader.py` определить длительность до тяжёлой обработки, отклонить файл длиннее 180 секунд и защитить загрузку URL ограничениями размера, времени, allowlist'ом хостов и контролируемым egress против SSRF. Оба вызова yt-dlp обязаны использовать egress-прокси; Compose оставляет API только во внутренней сети, а Squid разрешает DNS и отклоняет непубличные адреса на каждом запросе, включая редиректы. Проверка сети — `bash scripts/test_egress.sh`, границы — в разделе [«Безопасность»](docs/architecture.md#безопасность).
+ 4. [x] Реализовать извлечение фактов: получить аудио и речь в `src/extractors/stt.py`, выбрать кадры в `src/extractors/frames.py`, прочитать текст в `src/extractors/ocr.py`. Закрепить используемые модели, параметры и лимиты ресурсов. Результат: пайплайн возвращает проверяемые фрагменты речи и текста с экрана.
+ 5. [x] Собрать рецепт: в `src/llm/fusion.py` передать STT и OCR в LLM, потребовать JSON по Recipe 1.0.0, провалидировать ответ и не подставлять неизвестные числа. Затем соединить этапы в `src/pipeline.py`, API и CLI. Результат: корректный вход возвращает валидный `Recipe` либо структурированную ошибку из [API reference](docs/api_reference.md).
+-6. [ ] Проверить на реальных данных: тесты без ключей и `make test` выполнены; остались три сквозных прогона и сравнение с эталонами по [критериям приёмки](docs/evaluation.md) (команды и протокол — в [real-testing.md](docs/real-testing.md)). Результат: в PR есть команды проверки, JSON-примеры и зафиксированные расхождения.
++6. [ ] Проверить на реальных данных: тесты без ключей и `make test` выполнены; upload-результаты трёх основных видео дают 100,0%, 85,0% и 96,8% по зафиксированной метрике. Все пять сетевых egress-проверок выполнены 16.11.2026. До полной приёмки нужны фактические JSON и отчёт последнего Plov-запуска, CLI и URL-прогоны, STT/OCR-артефакты, приложенный egress-журнал и ручная проверка содержания по [real-testing.md](docs/real-testing.md).
+ 
+ ## Проверка и сдача
+ 
+diff --git a/data/expected_outputs/README.md b/data/expected_outputs/README.md
+index ea8d956..1fb013a 100644
+--- a/data/expected_outputs/README.md
++++ b/data/expected_outputs/README.md
+@@ -1,15 +1,44 @@
+-# Примеры и будущие эталоны
++# Синтетические примеры и ручные эталоны
+ 
+-`pasta.json`, `omelette.json` и `salad.json` — **синтетические примеры общего Recipe 1.0.0**. Они созданы для проверки формата. Они не извлечены из видео и не сверены с реальными роликами.
++`pasta.json`, `omelette.json` и `salad.json` — **синтетические примеры общего
++Recipe 1.0.0**. Они созданы для проверки формата, не извлечены из видео и не
++сверены с реальными роликами.
+ 
+-Для подготовки эталонного набора:
++Ручные эталоны основного локального набора:
+ 
+-1. Добавь соответствующие разрешенные MP4 по [инструкции](../input_videos/README.md).
+-2. Вручную выпиши только сведения, подтвержденные содержимым ролика.
+-3. Замени синтетический JSON разметкой и укажи проверяемый источник.
+-4. Проверить JSON командой `.venv/bin/python -m fropti_core_contracts data/expected_outputs/*.json`: она использует `Recipe` 1.0.0. Контрактные тесты дополнительно проверяют те же файлы по JSON Schema. Неизвестные значения сохранять как `null`; не добавлять сведения для заполнения полей.
+-5. Зафиксируй происхождение видео и проверку разметки в `../input_videos/provenance.md`.
++| Видео | Эталон |
++| --- | --- |
++| `shakshuka.mp4` | `shakshuka.json` |
++| `plov.mp4` | `plov.json` |
++| `tomatoChickpea.mp4` | `tomatoChickpea.json` |
+ 
+-Сравнение выполнять по [метрике из рубрики приёмки](../../docs/evaluation.md#как-считать-совпадение-полей). Поля и правила нормализации согласовать до запуска оценки. Для каждого результата сохранить список пропущенных полей, лишних полей и несовпадающих значений; отдельно отметить сведения, не подтверждённые видео.
++`cake.json` и `butterChicken.json` относятся к дополнительным экспериментам с
++`chocolateCake.mp4` и `butterChicken.mp4`. Источники, типы входа, длительности и
++фактические результаты сравнения зафиксированы в
++[../input_videos/provenance.md](../input_videos/provenance.md). Соответствующие MP4
++включены в ветку; их размещение в наборе согласовано с ревьюерами.
+ 
+-Эти же файлы служат примерами границы трёх модулей: video extraction производит объект целиком, cooking planner / batch cooking читает шаги и порции, shopping list — ингредиенты и порции. Потребители не должны переименовывать поля или создавать собственный вариант `Recipe`. Примеры не подтверждают готовность логики планирования или списка покупок.
++При подготовке или исправлении эталона:
++
++1. Вручную выпиши только сведения, подтвержденные содержимым ролика.
++2. Неизвестные значения сохраняй как `null`; не добавляй сведения для заполнения
++   полей. Хотя бы один ингредиент и один непустой шаг обязательны по Recipe 1.0.0,
++   но схемная валидность не делает выдуманную инструкцию приемлемой.
++3. Проверь JSON командой
++   `.venv/bin/python -m fropti_core_contracts data/expected_outputs/*.json`.
++   Контрактные тесты дополнительно проверяют файлы по JSON Schema.
++4. Зафиксируй происхождение видео и ручную сверку в
++   `../input_videos/provenance.md`.
++
++Сравнение выполняется по
++[метрике из рубрики приёмки](../../docs/evaluation.md#как-считать-совпадение-полей).
++Поля и правила нормализации фиксируются до запуска оценки. Для каждого результата
++нужно сохранить числитель, знаменатель, процент и список расхождений; отдельно
++отметить сведения, не подтверждённые видео. Исключение свободных формулировок из
++численной метрики не отменяет ручную проверку полноты и достоверности шагов.
++
++Эти же файлы служат примерами границы трёх модулей: video extraction производит
++объект целиком, cooking planner / batch cooking читает шаги и порции, shopping
++list — ингредиенты и порции. Потребители не должны переименовывать поля или
++создавать собственный вариант `Recipe`. Примеры не подтверждают готовность логики
++планирования или списка покупок.
+diff --git a/data/input_videos/README.md b/data/input_videos/README.md
+index dbb4663..27230c4 100644
+--- a/data/input_videos/README.md
++++ b/data/input_videos/README.md
+@@ -1,29 +1,44 @@
+-# Тестовые видео
++# Видео для проверки
+ 
+-Реальные MP4 не предоставлены. Эта папка пока не содержит готового набора для проверки извлечения.
++Ветка содержит пять MP4 с согласованным ревьюерами размещением в валидационном
++наборе. `manifest.json` фиксирует источники, фактические длительности, типы входа
++и ссылки на ручные эталоны; доступные сведения и результаты приведены в
++[provenance.md](provenance.md).
+ 
+-Для приемки добавь три коротких ролика с разрешенным использованием:
++Основной набор для демонстрации:
+ 
+-| Видео | Соответствующая разметка |
+-| --- | --- |
+-| `pasta.mp4` | `../expected_outputs/pasta.json` |
+-| `omelette.mp4` | `../expected_outputs/omelette.json` |
+-| `salad.mp4` | `../expected_outputs/salad.json` |
++| Файл | Тип входа | Ручной эталон |
++| --- | --- | --- |
++| `shakshuka.mp4` | только аудио | `../expected_outputs/shakshuka.json` |
++| `plov.mp4` | речь и надписи | `../expected_outputs/plov.json` |
++| `tomatoChickpea.mp4` | только текст | `../expected_outputs/tomatoChickpea.json` |
+ 
+-Эти имена предназначены для будущего набора. Имеющиеся JSON синтетические: их нужно заменить или проверить и скорректировать по фактическому содержимому видео.
++`chocolateCake.mp4` и `butterChicken.mp4` — дополнительные эксперименты, не
++обязательные для основной демонстрации. Все пять файлов доступны в этой папке
++после checkout ветки; отдельно скачивать исходные ролики не требуется.
+ 
+-Скопируй `manifest.example.json` в `manifest.json` и заполни для каждого видео источник, разрешение на использование, длительность и путь к разметке. Поставь `annotation_verified: true` только после сверки JSON с видео. В `provenance.md` дополнительно укажи автора видео, дату получения и автора ручной разметки. Каждый ролик должен длиться не больше 180 секунд.
++`pasta.json`, `omelette.json` и `salad.json` в `../expected_outputs/` остаются
++синтетическими примерами контракта и не относятся к этому набору. Ручной эталон
++должен содержать только сведения, подтверждённые видео; неизвестное сохраняется
++как `null`. Поле `annotation_verified: true` означает ручную сверку эталона.
++Не добавляй приватные материалы, чужие cookies или персональные данные. Каждый
++ролик должен длиться не больше 180 секунд.
+ 
+-Подбери разные источники информации: речь, надписи и их сочетание. Не загружай приватные материалы, чужие cookies или видео без разрешения на распространение. Доступность ролика в интернете сама по себе не дает права включить его в репозиторий.
++Локальные MP4 проверяют извлечение из файла, но не работоспособность скачивания
++по URL. URL-путь проверяется отдельно на поддерживаемой платформе. Facebook Plov
++в текущий `ALLOWED_URL_HOSTS` не входит и поэтому проверяется только как локальный
++файл. Полный протокол и перечень оставшихся доказательств — в
++[real-testing.md](../../docs/real-testing.md).
+ 
+-Локальные MP4 нужны для воспроизводимой проверки извлечения. Они не подтверждают работоспособность скачивания с YouTube Shorts, Reels или RuTube: загрузчик проверяется отдельно на доступных разрешенных URL. Полный протокол проверки (типы входа, эталоны, команды) — в [real-testing.md](../../docs/real-testing.md).
+-
+-После добавления своего файла отправь его через `/docs` → **POST /extract/upload → Try it out** или из корня репозитория:
++Отправь файл через `/docs` → **POST /extract/upload → Try it out** или из корня
++репозитория:
+ 
+ ```bash
+-curl -i -X POST http://localhost:8000/extract/upload \
+-  -F 'file=@data/input_videos/pasta.mp4'
+-.venv/bin/python -m src.main --file data/input_videos/pasta.mp4
++scripts/upload.sh data/input_videos/shakshuka.mp4
++.venv/bin/python -m src.main --file data/input_videos/shakshuka.mp4
+ ```
+ 
+-HTTP-загрузка ограничена 100 МиБ. API возвращает валидированный `Recipe` либо структурированную ошибку из [API reference](../../docs/api_reference.md). CLI печатает рецепт и завершается с кодом `0`; при ошибке — `[код] сообщение` и код выхода `1` (для видео длиннее лимита — `2`).
++HTTP-загрузка ограничена 100 МиБ. API возвращает валидированный `Recipe` либо
++структурированную ошибку из [API reference](../../docs/api_reference.md). CLI
++печатает рецепт и завершается с кодом `0`; при ошибке — `[код] сообщение` и код
++выхода `1` (для видео длиннее лимита — `2`).
+diff --git a/data/input_videos/manifest.json b/data/input_videos/manifest.json
+index 1f4007e..07c06d7 100644
+--- a/data/input_videos/manifest.json
++++ b/data/input_videos/manifest.json
+@@ -1,36 +1,51 @@
+ {
+-  "status": "validation_set_supplied_4_videos",
++  "status": "validation_set_supplied_5_videos",
+   "videos": [
+     {
+       "file": "shakshuka.mp4",
+       "source_url": "https://www.youtube.com/shorts/U4lQPin-zis",
+-      "license_or_permission": "YouTube Shorts: строка «Лицензия» в описании не отображается; право не подтверждено — файл локальный, в репозиторий не коммитится",
+-      "duration_seconds": null,
++      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
++      "duration_seconds": 24.59,
++      "input_type": "audio_only",
+       "expected_output": "../expected_outputs/shakshuka.json",
+       "annotation_verified": true
+     },
+     {
+       "file": "plov.mp4",
+       "source_url": "https://www.facebook.com/watch/?v=1293244242771191",
+-      "license_or_permission": "Facebook, страница «Milana Russian Wife»: публичного механизма лицензий нет; право на распространение не подтверждено — файл локальный, в репозиторий не коммитится",
+-      "duration_seconds": null,
++      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
++      "duration_seconds": 100.3,
++      "input_type": "speech_and_text",
+       "expected_output": "../expected_outputs/plov.json",
+       "annotation_verified": true
+     },
+     {
+-      "file": "cake.mp4",
++      "file": "tomatoChickpea.mp4",
++      "source_url": "https://www.youtube.com/shorts/fhphZcnJ3dA",
++      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
++      "duration_seconds": 72.075,
++      "input_type": "text_only",
++      "expected_output": "../expected_outputs/tomatoChickpea.json",
++      "annotation_verified": true
++    }
++  ],
++  "additional_experiments": [
++    {
++      "file": "chocolateCake.mp4",
+       "source_url": "https://www.youtube.com/watch?v=tEPwZuWx8ds",
+-      "license_or_permission": "YouTube: лицензия не проверена (Standard YouTube Licence или CC-BY); до подтверждения файл локальный, в репозиторий не коммитится",
+-      "duration_seconds": null,
++      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
++      "duration_seconds": 140.938685,
++      "input_type": "audio_only",
+       "expected_output": "../expected_outputs/cake.json",
+       "annotation_verified": true
+     },
+     {
+-      "file": "tomatoChickpea.mp4",
+-      "source_url": "https://www.youtube.com/shorts/fhphZcnJ3dA",
+-      "license_or_permission": "YouTube Shorts: строка «Лицензия» в описании не отображается; право не подтверждено — файл локальный, в репозиторий не коммитится",
+-      "duration_seconds": 72,
+-      "expected_output": "../expected_outputs/tomatoChickpea.json",
++      "file": "butterChicken.mp4",
++      "source_url": "https://www.youtube.com/shorts/18gdBoDT0Rk",
++      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
++      "duration_seconds": 42.586,
++      "input_type": "audio_only",
++      "expected_output": "../expected_outputs/butterChicken.json",
+       "annotation_verified": true
+     }
+   ]
+diff --git a/data/input_videos/provenance.md b/data/input_videos/provenance.md
+index 1bccdad..ed4ce73 100644
+--- a/data/input_videos/provenance.md
++++ b/data/input_videos/provenance.md
+@@ -1,80 +1,108 @@
+-# Происхождение валидационного набора
++# Происхождение набора проверки
+ 
+-Набор приёмки: 4 ролика, закрыты все три типа входа: только аудио —
+-shakshuka и cake (речь на русском), сочетание (речь и надписи) — plov,
+-только текст — tomatoChickpea («no-talking», рецепт в надписях, звук —
+-музыка). См. real-testing.md, таблицу типов.
++Основной набор содержит три ролика и закрывает все три типа входа: только
++аудио — `shakshuka.mp4`, сочетание речи и надписей — `plov.mp4`, только текст —
++`tomatoChickpea.mp4`. `chocolateCake.mp4` и `butterChicken.mp4` — дополнительные
++эксперименты; они не заменяют основные сценарии демонстрации.
+ 
+-В репозиторий коммитятся `manifest.json`, этот файл и эталоны в
+-`../expected_outputs/`. Медиафайл попадает в репозиторий только при
+-подтверждённом праве: лицензия CC-BY (с указанием автора и ссылки) либо
+-собственная запись. Доступность ролика в интернете сама по себе права
+-не даёт — правила в [README](README.md). До подтверждения MP4 хранятся
+-локально; для воспроизведения скачать ролик по ссылке из `manifest.json`
+-или запросить файлы у автора PR.
++Все пять MP4 включены в ветку `video-extraction-mvp`; их размещение в
++валидационном наборе согласовано с ревьюерами. Ниже зафиксированы доступные
++источники и сведения о происхождении. Неизвестные автор, дата получения и
++лицензия не выдумываются. Ручные эталоны и небольшие обезличенные результаты
++запусков находятся в том же наборе данных.
+ 
+-## shakshuka.mp4 — только аудио
++## Сводка
++
++| Файл | Роль | Тип входа | Длительность | Последний результат upload |
++| --- | --- | --- | ---: | --- |
++| `shakshuka.mp4` | основной | только аудио | 24,590 с | 40/40 = 100,0%, PASS |
++| `plov.mp4` | основной | речь + надписи | 100,300 с | 51/60 = 85,0%, PASS |
++| `tomatoChickpea.mp4` | основной | только текст | 72,075 с | 31/32 = 96,8%, PASS |
++| `chocolateCake.mp4` | дополнительный | только аудио | 140,938685 с | 40/46 = 86,9%, PASS |
++| `butterChicken.mp4` | дополнительный | только аудио | 42,586 с | 50/50 = 100,0%, PASS |
++
++Все длительности ниже лимита 180 секунд. Процент — результат заранее заданного
++сравнения полей, а не самостоятельное доказательство смысловой правильности.
++Каждый результат также нужно вручную проверить против видео: схемная валидность
++не оправдывает выдуманные или слишком общие инструкции.
++
++## Основной набор
++
++### shakshuka.mp4 — только аудио
+ 
+ - Источник: https://www.youtube.com/shorts/U4lQPin-zis
+-- Автор видео: канал «Sara - Nutrient Matters», публикация 17.03.2024,
++- Доступные сведения: канал «Sara - Nutrient Matters», публикация 17.03.2024,
+   название «When I don't want leftovers I make this single serve shakshuka».
+-- Лицензия: не подтверждена. Проверка выполнена: это Shorts, строка
+-  «Лицензия» в описании не отображается. Считаем Standard YouTube Licence:
+-  файл остаётся локальным, в репозиторий не коммитится.
+-- Дата получения: ноябрь 2026 (уточнить точный день скачивания).
+-- Эталон: `../expected_outputs/shakshuka.json`, сверка с видео выполнена
+-  (compare_gold 100% PASS, точка входа upload).
++- Лицензия и точная дата получения копии: не зафиксированы.
++- Ручной эталон: `../expected_outputs/shakshuka.json`.
++- Результат `POST /extract/upload`: `../../runs/shakshuka.upload.json`;
++  сравнение 40/40 = 100,0%, PASS.
+ 
+-## plov.mp4 — сочетание (аудио + текст)
++### plov.mp4 — сочетание речи и надписей
+ 
+ - Источник: https://www.facebook.com/watch/?v=1293244242771191
+-- Автор видео: страница «Milana Russian Wife» (со слов автора PR; страница
+-  без входа не показывает автора и описание конкретного ролика).
+-- Лицензия: не подтверждена; у Facebook нет публичного механизма лицензий
+-  Creative Commons. Файл скачан ранее и используется локально, в репозиторий
+-  не включается. URL-точка входа принимает только YouTube (SSRF-проверка
+-  хоста), поэтому воспроизведение — через upload или CLI с локальным файлом.
+-- Дата получения: ноябрь 2026 (уточнить точный день скачивания).
+-- Тип входа: сочетание — в ролике есть и речь, и надписи на экране; слот
+-  проверяет слияние STT и OCR в fusion.py без дублирования и противоречий.
+-- Эталон: `../expected_outputs/plov.json`, сверка с видео выполнена
+-  (compare_gold 87.5% PASS, точка входа upload).
+-
+-## cake.mp4 — только аудио (речь на русском)
++- Доступные сведения: страница «Milana Russian Wife» указана автором PR;
++  название публикации, лицензия и точная дата получения не зафиксированы.
++- Ручной эталон: `../expected_outputs/plov.json`.
++- Последний локальный запуск `POST /extract/upload`: 51/60 = 85,0%, PASS.
++  Зафиксированные расхождения: отсутствуют эталонные шаги 10/11, есть сдвиг
++  или ошибка в длительностях шагов, заголовок `homemade plov` вместо
++  `real homemade plov`. Соответствующий новый JSON ещё не добавлен в ветку.
++- `../../runs/plov.upload.json` в текущем снимке относится к предыдущему
++  запуску и даёт 53/62 = 85,4%; его нельзя выдавать за артефакт последнего
++  результата 85,0%. Перед финальной сдачей заменить файл фактическим JSON
++  последнего запуска и повторить сравнение.
++- URL-запрос этого ролика через `/extract` сейчас не поддерживается: Facebook
++  отсутствует в `ALLOWED_URL_HOSTS`. Проверка выполняется через upload или CLI
++  с локальным файлом; это не доказывает поддержку Facebook URL.
+ 
+-- Источник: https://www.youtube.com/watch?v=tEPwZuWx8ds
+-- Автор видео: (заполнить: канал и название — вывод команды yt-dlp).
+-- Лицензия: не подтверждена (проверка — как у shakshuka).
+-- Дата получения: (указать).
+-- Эталон: `../expected_outputs/cake.json`, сверка с видео выполнена
+-  (compare_gold 84.2% PASS, точка входа upload).
+-- Сведения, не подтверждённые видео: «Кокосовая стружка» в результате —
+-  ошибка извлечения (в видео кокоса нет; в видео — кусочки шоколада;
+-  эталон «Шоколад» корректен). Зафиксировано как known limitation
+-  LLM-фьюжна, prompt-правило не добавлялось.
+-
+-## tomatoChickpea.mp4 — только текст
++### tomatoChickpea.mp4 — только текст
+ 
+ - Источник: https://www.youtube.com/shorts/fhphZcnJ3dA
+-- Автор видео: (заполнить: канал и название — вывод команды yt-dlp).
+-- Лицензия: не подтверждена. Проверка выполнена: это Shorts, строка
+-  «Лицензия» в описании не отображается — как у shakshuka, файл остаётся
+-  локальным.
+-- Дата получения: ноябрь 2026 (уточнить точный день скачивания).
+-- Эталон: `../expected_outputs/tomatoChickpea.json`, сверка с видео
+-  выполнена (заполнить: результат compare_gold — числитель, знаменатель,
+-  процент; точка входа).
+-- Ожидаемое поведение: расшифровка пустая или почти пустая (звук — музыка,
+-  `vad_filter=True` отсекает музыку); рецепт собирается из OCR — надписи
+-  «Creamy chickpea skillet», подписи шагов и ингредиентов.
+-
+-## Аннотирование и сверка
+-
+-- Автор ручной разметки (эталоны): Gabri.
+-- Метод сверки: `scripts/compare_gold.py --exclude /source
+-  --absent-equals-null --skip-notes --skip-instructions`; порог — не меньше
+-  80% совпавших полей на видео.
+-- Результаты на 2026-11-12: shakshuka 100%, plov 87.5%, cake 84.2% — все
+-  PASS (точка входа upload, full-образ); tomatoChickpea — (заполнить:
+-  результат compare_gold). Прогоны CLI и URL по всем видео —
+-  по протоколу [real-testing.md](../../docs/real-testing.md).
++- Название в видео: «Creamy Chickpea Skillet». Автор, лицензия и точная дата
++  получения копии не зафиксированы.
++- Формат: «no-talking», рецепт дан в надписях, звук — музыка.
++- Ручной эталон: `../expected_outputs/tomatoChickpea.json`.
++- Результат `POST /extract/upload`: `../../runs/tomatoChickpea.upload.json`;
++  сравнение 31/32 = 96,8%, PASS. Единственное расхождение метрики — регистр
++  заголовка: `CREAMY CHICKPEA SKILLET` вместо `Creamy Chickpea Skillet`.
++
++## Дополнительные эксперименты
++
++### chocolateCake.mp4 — только аудио
++
++- Источник: https://www.youtube.com/watch?v=tEPwZuWx8ds
++- Автор, лицензия и точная дата получения копии не зафиксированы.
++- Ручной эталон: `../expected_outputs/cake.json`; результат:
++  `../../runs/cake.upload.json`.
++- Сравнение текущих файлов: 40/46 = 86,9%, PASS. Это дополнительный, не
++  основной демонстрационный случай.
++
++### butterChicken.mp4 — только аудио
++
++- Источник: https://www.youtube.com/shorts/18gdBoDT0Rk
++- Автор, лицензия и точная дата получения копии не зафиксированы.
++- Ручной эталон: `../expected_outputs/butterChicken.json`; результат:
++  `../../runs/butterChicken.upload.json`.
++- Сравнение текущих файлов: 50/50 = 100,0%, PASS. Это дополнительный, не
++  основной демонстрационный случай.
++
++## Аннотирование, сравнение и границы доказательств
++
++- Автор ручной разметки: Gabri.
++- Метрика: `scripts/compare_gold.py --exclude /source --absent-equals-null
++  --skip-notes --skip-instructions`; порог — не меньше 80% для каждого видео.
++- Ингредиенты сопоставляются по нормализованному имени. Исключение формулировок
++  шагов не скрывает пропущенные и лишние шаги; `--absent-equals-null` не стирает
++  поля полностью отсутствующего элемента списка.
++- В ветке есть перечисленные выше `runs/*.upload.json` и отчёты для этих же
++  файлов в `runs/comparisons/`; предыдущий Plov-отчёт явно назван
++  `plov.previous-upload.txt`. Результаты CLI, успешные `runs/*.url.json`,
++  обезличенные `transcript.txt`/`screen_text.txt`, новый JSON и отчёт Plov 85,0%
++  ещё не приложены.
++- 16.11.2026 на Docker-машине автора `scripts/test_egress.sh` успешно завершил
++  все пять сетевых проверок, включая запрет редиректа на loopback и отсутствие
++  прямого egress. Фактический `runs/controlled-egress.log` добавляется автором
++  отдельно; окончательный security sign-off остаётся за ревьюером.
++- Секреты, cookies, персональные данные и чувствительные логи в доказательства
++  не включать. Результаты моков не выдавать за реальное извлечение.
+diff --git a/docker-compose.full.yml b/docker-compose.full.yml
+index 82e1e8e..0ec0083 100644
+--- a/docker-compose.full.yml
++++ b/docker-compose.full.yml
+@@ -96,16 +96,16 @@ services:
+       - hf-cache:/home/appuser/.cache/huggingface
+       - paddleocr-cache:/home/appuser/.paddleocr
+       - paddlex-cache:/home/appuser/.paddlex
+-      # YouTube cookies (bot check): put cookies.txt next to this file,
+-      # uncomment the mount and set YTDLP_COOKIES_FILE=/cookies.txt in .env.
++      # YouTube cookies (bot check): put cookies.txt next to this file;
++      # the read-only mount below and YTDLP_COOKIES_FILE=/cookies.txt are enabled.
+       # Cookies are account credentials — keep the file out of git.
+       # ":ro" is fine (docker secrets too): yt-dlp gets a private temp copy
+       # per run (_private_cookies_file); the mounted file is only ever read.
+       # Update cookies by replacing the file — no container restart needed.
+       - ./cookies.txt:/cookies.txt:ro
+       # Debug artifacts (DEBUG_ARTIFACTS_DIR in .env): transcript.txt and
+-      # screen_text.txt per run land in ./runs/debug on the host. Uncomment
+-      # together with DEBUG_ARTIFACTS_DIR=/runs/debug.
++      # screen_text.txt per run land in ./runs/debug on the host. The mount is
++      # enabled; also set DEBUG_ARTIFACTS_DIR=/runs/debug in .env.
+       - ./runs/debug:/runs/debug
+     healthcheck:
+       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+diff --git a/docs/api_reference.md b/docs/api_reference.md
+index 4d4a707..c7df3c3 100644
+--- a/docs/api_reference.md
++++ b/docs/api_reference.md
+@@ -40,10 +40,10 @@ curl -i -X POST http://localhost:8000/extract \
+ 
+ ```bash
+ curl -i -X POST http://localhost:8000/extract/upload \
+-  -F 'file=@data/input_videos/pasta.mp4'
++  -F 'file=@data/input_videos/shakshuka.mp4'
+ ```
+ 
+-Файл `pasta.mp4` пока не включен в репозиторий: сначала добавь разрешенное видео или замени путь своим. Не задавай `Content-Type` вручную: клиент добавит multipart boundary. Если путь не существует, curl отвечает «(26) Failed to open/read local data from file/application», не называя файл, — запрос до сервера не доходит; обёртка `scripts/upload.sh <файл>` проверяет файл до вызова curl и печатает `error: file not found: …`.
++Файл `shakshuka.mp4` включён в валидационный набор ветки. Не задавай `Content-Type` вручную: клиент добавит multipart boundary. Если путь не существует, curl отвечает «(26) Failed to open/read local data from file/application», не называя файл, — запрос до сервера не доходит; обёртка `scripts/upload.sh <файл>` проверяет файл до вызова curl и печатает `error: file not found: …`.
+ 
+ | Поле | Тип | Обязательность |
+ | --- | --- | --- |
+diff --git a/docs/faq.md b/docs/faq.md
+index 81980c3..c0993b1 100644
+--- a/docs/faq.md
++++ b/docs/faq.md
+@@ -14,7 +14,7 @@
+ 
+ ### curl пишет «(26) Failed to open/read local data from file/application» — что это?
+ 
+-Это ошибка на стороне клиента: запрос до сервера не дошёл. В `-F 'file=@путь'` curl не смог прочитать локальный файл, но в сообщении не называет ни файл, ни причину. Проверь, что путь существует относительно текущего каталога (`ls путь`) — реальные MP4 в репозиторий не входят (см. «Почему в репозитории нет четырёх MP4»). Обёртка `scripts/upload.sh data/input_videos/tomatoChickpea.mp4` проверяет файл до вызова curl и на пропажу печатает понятное `error: file not found: …`.
++Это ошибка на стороне клиента: запрос до сервера не дошёл. В `-F 'file=@путь'` curl не смог прочитать локальный файл, но в сообщении не называет ни файл, ни причину. Проверь, что путь существует относительно текущего каталога (`ls путь`) — пять реальных MP4 находятся в `data/input_videos/` (см. «Какие MP4 входят в набор»). Обёртка `scripts/upload.sh data/input_videos/tomatoChickpea.mp4` проверяет файл до вызова curl и на пропажу печатает понятное `error: file not found: …`.
+ 
+ ### Какие ограничения у входного видео?
+ 
+@@ -48,9 +48,9 @@ YouTube ограничил IP-адрес (обычно адрес датацен
+ 
+ Зафиксируй платформу и причину: доступ, удаление, авторизация, ограничение загрузки или техническая ошибка. Не обещай поддержку платформы по одному успешному URL. Хосты загрузчика ограничены `ALLOWED_URL_HOSTS` (по умолчанию — домены YouTube); добавление платформы — расширение списка плюс отдельная проверка. Для воспроизводимых проверок используй разрешенные локальные файлы и отделяй их от тестов загрузчика.
+ 
+-### Почему в репозитории нет четырёх MP4?
++### Какие MP4 входят в набор?
+ 
+-Реальные видео не включены: право на распространение исходных роликов не получено. `pasta.json`, `omelette.json` и `salad.json` в `data/expected_outputs/` — синтетические примеры схемы, а не результаты распознавания. Набор для приёмки (четыре видео с ручными эталонами, файлы локальные) готовится по [real-testing.md](real-testing.md) и [правилам набора данных](../data/input_videos/README.md).
++Ветка содержит пять MP4 в `data/input_videos/`; их размещение согласовано с ревьюерами. Основной набор — Shakshuka, Plov и Creamy Chickpea; Chocolate Cake и Butter Chicken — дополнительные эксперименты. Источники указаны в `manifest.json` и `provenance.md`. `pasta.json`, `omelette.json` и `salad.json` — синтетические примеры схемы, а не результаты распознавания. См. [provenance.md](../data/input_videos/provenance.md), [real-testing.md](real-testing.md) и [правила набора данных](../data/input_videos/README.md).
+ 
+ ### Где взять fropti-core-contracts?
+ 
+diff --git a/docs/real-testing.md b/docs/real-testing.md
+index 5f601f2..0723969 100644
+--- a/docs/real-testing.md
++++ b/docs/real-testing.md
+@@ -12,19 +12,20 @@
+ | Только аудио | да | нет | STT-путь; пустой OCR не должен ломать сборку рецепта |
+ | Сочетание | да | да | слияние двух источников в `fusion.py` без дублирования и противоречий |
+ 
+-Первое видео набора:
++Основной набор и доступные результаты:
+ 
+-| Свойство | `tomatoChickpea.mp4` |
+-| --- | --- |
+-| Тип | только текст («no-talking» формат: рецепт в надписях, звук — музыка) |
+-| Длительность | 72 с (лимит 180 с — с запасом) |
+-| Формат | 720×1280 (вертикальное), H.264 + AAC, 18 МБ |
+-| Надписи | заголовок «Creamy chickpea skillet», подписи шагов («Spices + chickpeas») и ингредиентов |
+-| Ожидаемое поведение | расшифровка пустая или почти пустая (`vad_filter=True` отсекает музыку); рецепт собирается из OCR |
++| Локальный файл | Тип | Длительность | Upload и сравнение |
++| --- | --- | ---: | --- |
++| `shakshuka.mp4` | только аудио | 24,590 с | JSON приложен; 40/40 = 100,0%, PASS |
++| `plov.mp4` | речь + надписи | 100,300 с | последний вывод 51/60 = 85,0%, PASS; новый JSON ещё не приложен |
++| `tomatoChickpea.mp4` | только текст | 72,075 с | JSON приложен; 31/32 = 96,8%, PASS |
+ 
+-Закрыты все три слота: «только аудио» — shakshuka и cake (речь на русском),
+-«сочетание» (голос + надписи) — plov, «только текст» — tomatoChickpea
+-(таблица выше). На каждом слоте — один формат метки в таблице выше.
++Для `tomatoChickpea.mp4` рецепт дан в надписях, звук — музыка; ожидается пустая
++или почти пустая расшифровка и сборка рецепта из OCR. Источники и ограничения
++доказательств перечислены в [provenance.md](../data/input_videos/provenance.md).
++`chocolateCake.mp4` и `butterChicken.mp4` — дополнительные эксперименты, а не
++замена основных случаев. Все пять MP4 включены в ветку; их размещение в наборе
++согласовано с ревьюерами.
+ 
+ ## Подготовка набора
+ 
+@@ -69,7 +70,7 @@ curl -s -X POST http://localhost:8000/extract \
+   data/expected_outputs/tomatoChickpea.json runs/tomatoChickpea.file.json
+ ```
+ 
+-Для каждого прогона зафиксировать: дату, команду, снимок настроек (без `LLM_API_KEY`), версии моделей (fastest-whisper/пакетов — `pip freeze`), результат `compare_gold.py` (числитель, знаменатель, процент, список расхождений). Промежуточные артефакты — расшифровка речи и текст с экрана — приложить в обезличенном виде: по ним видно, из какого источника пришёл каждый факт рецепта. Их сохраняет переменная `DEBUG_ARTIFACTS_DIR`: каждый запуск пишет `transcript.txt` и `screen_text.txt` в свой подкаталог `run-*` (в Docker раскомментировать том `./runs/debug` в compose-файле). Куда складывать: папка `runs/` в корне (в репозиторий коммитить только обезличенные артефакты).
++Для каждого прогона зафиксировать: дату, команду, снимок настроек (без `LLM_API_KEY`), версии моделей (faster-whisper/пакетов — `pip freeze`), результат `compare_gold.py` (числитель, знаменатель, процент, список расхождений). Промежуточные артефакты — расшифровка речи и текст с экрана — приложить в обезличенном виде: по ним видно, из какого источника пришёл каждый факт рецепта. Их сохраняет переменная `DEBUG_ARTIFACTS_DIR`: каждый запуск пишет `transcript.txt` и `screen_text.txt` в свой подкаталог `run-*` (в `docker-compose.full.yml` том `./runs/debug:/runs/debug` уже подключён). Куда складывать: папку `runs/` в корне (в репозиторий коммитить только обезличенные артефакты; `runs/debug/` игнорируется Git).
+ 
+ ## Проверка URL отдельно
+ 
+@@ -82,7 +83,28 @@ curl -s -X POST http://localhost:8000/extract \
+ 
+ Перед URL-демонстрацией выполнить `bash scripts/test_egress.sh` на машине с Docker. Скрипт отдельно проверяет разрешённый публичный HTTPS, запрет loopback/link-local, редирект на loopback, запрет небезопасного порта и невозможность прямого соединения с `--noproxy '*'`. Это сетевая интеграционная проверка; `make test` её не заменяет.
+ 
+-Ответ «Sign in to confirm you're not a bot» — ограничение IP со стороны YouTube, а не дефект кода; повторить позже или с другого IP. Cookies и обход ограничений в проект не добавляются ([SECURITY.md](../SECURITY.md)). Неудачные попытки фиксировать с причиной — они входят в отчёт как ограничение платформы, а не как провал извлечения.
++Ответ «Sign in to confirm you're not a bot» — ограничение со стороны YouTube, а не сам по себе дефект кода. При законном использовании можно настроить собственный Netscape-файл через `YTDLP_COOKIES_FILE` и локальное монтирование `./cookies.txt:/cookies.txt:ro`; cookies являются учётными данными, остаются вне Git и не печатаются в логах. Обход ограничений доступа в проект не встраивается ([SECURITY.md](../SECURITY.md)). Неудачные попытки фиксировать с причиной — они входят в отчёт как ограничение платформы, а не как успешное извлечение.
++
++## Текущее состояние доказательств
++
++На момент подготовки обновления набора:
++
++- выполнены и сохранены реальные upload-результаты для трёх основных и двух
++  дополнительных видео; для Plov в ветке пока предыдущий JSON, а не файл
++  последнего результата 51/60;
++- вручные эталоны и существующие результаты проходят Recipe 1.0.0, а пересчёт
++  текущих пар даёт не менее 80% для каждого из пяти видео;
++- отчёты `compare_gold.py` для существующих JSON сохранены в `runs/comparisons/`;
++  не приложены фактические CLI-результаты, успешные URL-результаты, обезличенные
++  STT/OCR-артефакты, новый JSON и отчёт последнего Plov-запуска, снимок настроек
++  и версий моделей;
++- 16.11.2026 `bash scripts/test_egress.sh` успешно завершил все пять проверок на
++  Docker-машине автора. Фактический `runs/controlled-egress.log` добавляется в PR
++  отдельно. Автоматические тесты не заменяют эту сетевую проверку; окончательный
++  security sign-off остаётся за ревьюером.
++
++Эти пробелы нужно указать в PR. Их нельзя закрывать повторным запуском моков,
++редактированием процентов или записью команды без фактического результата.
+ 
+ ## Критерии готовности проверки
+ 
+diff --git a/runs/comparisons/butterChicken.upload.txt b/runs/comparisons/butterChicken.upload.txt
+new file mode 100644
+index 0000000..4a09964
+--- /dev/null
++++ b/runs/comparisons/butterChicken.upload.txt
+@@ -0,0 +1,7 @@
++Command:
++python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/butterChicken.json runs/butterChicken.upload.json
++
++Эталон:   data/expected_outputs/butterChicken.json
++Результат: runs/butterChicken.upload.json
++Пути в объединении: 50; совпадений: 50; расхождений: 0.
++Совпадение: 50/50 = 100.0% (порог 80%) — PASS
+diff --git a/runs/comparisons/cake.upload.txt b/runs/comparisons/cake.upload.txt
+new file mode 100644
+index 0000000..4892529
+--- /dev/null
++++ b/runs/comparisons/cake.upload.txt
+@@ -0,0 +1,14 @@
++Command:
++python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/cake.json runs/cake.upload.json
++
++Эталон:   data/expected_outputs/cake.json
++Результат: runs/cake.upload.json
++Пути в объединении: 46; совпадений: 40; расхождений: 6.
++Совпадение: 40/46 = 86.9% (порог 80%) — PASS
++Расхождения:
++  /ingredients/Кокосовая стружка/name  [лишнее в результате]  результат="Кокосовая стружка"
++  /ingredients/Кокосовая стружка/quantity  [лишнее в результате]  результат=null
++  /ingredients/Шоколад/name  [нет в результате]  эталон="Шоколад"
++  /ingredients/Шоколад/quantity  [нет в результате]  эталон=null
++  /steps/6/duration_seconds  [лишнее в результате]  результат=120
++  /title  эталон="десерт шоколадная гуртка"  результат="Шоколадная гуртка"
+diff --git a/runs/comparisons/plov.previous-upload.txt b/runs/comparisons/plov.previous-upload.txt
+new file mode 100644
+index 0000000..f989fa9
+--- /dev/null
++++ b/runs/comparisons/plov.previous-upload.txt
+@@ -0,0 +1,18 @@
++Previous committed Plov upload artifact — not the latest 51/60 = 85.0% run.
++Command:
++python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/plov.json runs/plov.upload.json
++
++Эталон:   data/expected_outputs/plov.json
++Результат: runs/plov.upload.json
++Пути в объединении: 62; совпадений: 53; расхождений: 9.
++Совпадение: 53/62 = 85.4% (порог 80%) — PASS
++Расхождения:
++  /steps/10/duration_seconds  эталон=1500  результат=null
++  /steps/11/duration_seconds  эталон=null  результат=1500
++  /steps/12/duration_seconds  [лишнее в результате]  результат=null
++  /steps/12/instruction  [лишнее в результате]  результат="<excluded-by-skip-instructions>"
++  /steps/4/duration_seconds  эталон=420  результат=null
++  /steps/5/duration_seconds  эталон=null  результат=4200
++  /steps/6/duration_seconds  эталон=2400  результат=null
++  /steps/7/duration_seconds  эталон=null  результат=2400
++  /title  эталон="real homemade plov"  результат="homemade plov"
+diff --git a/runs/comparisons/shakshuka.upload.txt b/runs/comparisons/shakshuka.upload.txt
+new file mode 100644
+index 0000000..01b45b1
+--- /dev/null
++++ b/runs/comparisons/shakshuka.upload.txt
+@@ -0,0 +1,7 @@
++Command:
++python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/shakshuka.json runs/shakshuka.upload.json
++
++Эталон:   data/expected_outputs/shakshuka.json
++Результат: runs/shakshuka.upload.json
++Пути в объединении: 40; совпадений: 40; расхождений: 0.
++Совпадение: 40/40 = 100.0% (порог 80%) — PASS
+diff --git a/runs/comparisons/tomatoChickpea.upload.txt b/runs/comparisons/tomatoChickpea.upload.txt
+new file mode 100644
+index 0000000..70c09a0
+--- /dev/null
++++ b/runs/comparisons/tomatoChickpea.upload.txt
+@@ -0,0 +1,9 @@
++Command:
++python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/tomatoChickpea.json runs/tomatoChickpea.upload.json
++
++Эталон:   data/expected_outputs/tomatoChickpea.json
++Результат: runs/tomatoChickpea.upload.json
++Пути в объединении: 32; совпадений: 31; расхождений: 1.
++Совпадение: 31/32 = 96.8% (порог 80%) — PASS
++Расхождения:
++  /title  эталон="Creamy Chickpea Skillet"  результат="CREAMY CHICKPEA SKILLET"
+diff --git a/scripts/test_egress.sh b/scripts/test_egress.sh
+index aa02909..d752e3d 100644
+--- a/scripts/test_egress.sh
++++ b/scripts/test_egress.sh
+@@ -4,6 +4,9 @@
+ # its containers/networks/volumes on exit; it does not stop the normal stack.
+ set -euo pipefail
+ 
++# Git Bash/MSYS must pass Linux paths such as /dev/null to containers unchanged.
++export MSYS_NO_PATHCONV=1
++
+ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ cd "$ROOT"
+ 
+diff --git a/src/TODO.md b/src/TODO.md
+index ba04ab3..565b2a8 100644
+--- a/src/TODO.md
++++ b/src/TODO.md
+@@ -1,9 +1,9 @@
+ # План реализации MVP (10–12 часов)
+ 
+-Извлечение реализовано: длительность, безопасная загрузка, STT, кадры, OCR, объединение через LLM и обработка ошибок работают и покрыты тестами (`make test`). Пункты 2 и 10 остаются: они требуют реальные видео, ручные эталоны и сквозные прогоны. Критерии готовности приведены в [рубрике](../docs/evaluation.md).
++Извлечение реализовано: длительность, безопасная загрузка, STT, кадры, OCR, объединение через LLM и обработка ошибок работают и покрыты тестами (`make test`). Пункт 10 остаётся: он требует завершения сквозных прогонов и приложения всех доказательств. Критерии готовности приведены в [рубрике](../docs/evaluation.md).
+ 
+ 1. [x] Изучить подключённый `Recipe` 1.0.0, валидатор и JSON Schema в `packages/fropti-core-contracts/`; использовать их в промпте LLM и интеграциях без создания отдельной модели.
+-2. [ ] Подготовить минимум три разрешённых реальных видео и ручные эталоны в `data/`; зафиксировать нормализацию и набор оцениваемых полей до прогона. План — в [docs/real-testing.md](../docs/real-testing.md).
++2. [x] Подготовить минимум три реальных видео и ручные эталоны в `data/`; MP4 включены с согласия ревьюеров, источники, длительности, типы входа и нормализация зафиксированы. План и текущий статус — в [docs/real-testing.md](../docs/real-testing.md).
+ 3. [x] Реализовать безопасное получение метаданных URL и файла в `downloader.probe_duration`; отклонять видео длиннее 180 секунд до тяжёлых этапов.
+ 4. [x] Реализовать `downloader.download_video` с защитой от SSRF, ограничениями размера и времени; использовать временные файлы с очисткой. Оба вызова yt-dlp идут через обязательный `EGRESS_PROXY_URL`; Compose изолирует API во внутренней сети, Squid проверяет назначение каждого запроса и редиректа. Граница и проверка `scripts/test_egress.sh` описаны в [architecture.md](../docs/architecture.md), раздел «Безопасность».
+ 5. [x] Реализовать извлечение аудио и STT в `extractors/stt.py`; закрепить модель, параметры и требования к ресурсам.
+@@ -11,7 +11,7 @@
+ 7. [x] Реализовать объединение STT/OCR через LLM в `llm/fusion.py`, валидацию общего `Recipe` и ограниченные повторы без выдумывания отсутствующих данных.
+ 8. [x] Соединить этапы в `pipeline.py` для URL и локального `Path`, сохранив работающие точки входа и очистку временных данных при успехе и ошибке.
+ 9. [x] Согласовать и реализовать обработку ошибок этапов в `api.py` и `main.py`; обновить API-документацию, Postman и пример клиента по фактическому поведению.
+-10. [ ] Дополнить тесты публичного поведения без API-ключей, выполнить `make test`, отдельно провести реальные сквозные проверки и приложить результаты по рубрике.
++10. [ ] Дополнить тесты публичного поведения без API-ключей, выполнить `make test`, отдельно провести реальные сквозные проверки и приложить результаты по рубрике. `make test`, upload-запуски и пять проверок `scripts/test_egress.sh` выполнены; остаются CLI/URL-доказательства, STT/OCR-артефакты, новые JSON и отчёт Plov и приложенный egress-журнал.
+ 
+ Все десять пунктов относятся к обязательному MVP. Для URL достаточно одной согласованной платформы и трёх воспроизводимых видео; локальная загрузка остаётся обязательной. Поддержку нельзя объявлять по одному частному успешному URL.
+ 
+diff --git a/tests/test_egress_config.py b/tests/test_egress_config.py
+index dcd5dd0..c33003b 100644
+--- a/tests/test_egress_config.py
++++ b/tests/test_egress_config.py
+@@ -56,3 +56,8 @@ def test_squid_denies_non_public_destinations_before_allow():
+     assert "http_access deny CONNECT !SSL_ports" in text
+     assert "cache deny all" in text
+     assert "access_log none" in text
++
++
++def test_egress_script_preserves_linux_paths_on_windows():
++    text = (ROOT / "scripts" / "test_egress.sh").read_text(encoding="utf-8")
++    assert "export MSYS_NO_PATHCONV=1" in text

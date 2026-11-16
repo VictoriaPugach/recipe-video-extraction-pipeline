@@ -1,13 +1,101 @@
+# Slim build (default): /health + tests only, no ML models.
+# Use this for local development, CI, and contract validation.
 services:
+  egress-proxy:
+    image: ubuntu/squid:6.6-24.04_edge
+    volumes:
+      - ./deploy/egress/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      - internal
+      - external
+    # No published port: the proxy is reachable only by the application.
+    # ubuntu/squid ships no squidclient/curl/wget: probe the manager port with
+    # bash /dev/tcp (bash is in the base image). The manager page is served
+    # from squid memory, so the probe makes no outbound connection.
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3128 && printf 'GET cache_object://localhost/info HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '^HTTP/' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
   api:
-    build: .
-    ports:
-      - "127.0.0.1:8000:8000"
+    build:
+      context: .
+      args:
+        BUILD_MODE: slim
+    # No published port here: `internal` is an internal-only network, so Docker
+    # cannot publish ports from it. The api-gateway service below forwards
+    # 127.0.0.1:8000 on the host to this container.
     env_file:
       - .env
+    environment:
+      # Explicit proxy for yt-dlp; upper/lowercase variables also cover LLM and
+      # optional runtime model downloads. Local health checks bypass the proxy.
+      EGRESS_PROXY_URL: http://egress-proxy:3128
+      HTTP_PROXY: http://egress-proxy:3128
+      HTTPS_PROXY: http://egress-proxy:3128
+      http_proxy: http://egress-proxy:3128
+      https_proxy: http://egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1,::1
+      no_proxy: localhost,127.0.0.1,::1
+      YTDLP_COOKIES_FILE: /cookies.txt
+    depends_on:
+      egress-proxy:
+        condition: service_healthy
+    networks:
+      - internal
+    volumes:
+      # Slim has no preloaded models: Whisper/PaddleOCR download at the first
+      # real request. Named volumes keep those caches across `down`/`up` so
+      # they are downloaded only once. Mountpoints are pre-created in the
+      # image (see Dockerfile) so the volumes inherit appuser ownership.
+      - hf-cache:/home/appuser/.cache/huggingface
+      - paddleocr-cache:/home/appuser/.paddleocr
+      - paddlex-cache:/home/appuser/.paddlex
+      # YouTube cookies (bot check): put cookies.txt next to this file,
+      # uncomment the mount and set YTDLP_COOKIES_FILE=/cookies.txt in .env.
+      # Cookies are account credentials — keep the file out of git.
+      # ":ro" is fine (docker secrets too): yt-dlp gets a private temp copy
+      # per run (_private_cookies_file); the mounted file is only ever read.
+      # Update cookies by replacing the file — no container restart needed.
+      # - ./cookies.txt:/cookies.txt
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 10s
+
+  # TCP forwarder: publishes the API on the host while keeping `api` itself
+  # on the internal-only network (its only way out stays the egress proxy).
+  api-gateway:
+    image: alpine/socat
+    command: tcp-listen:8000,fork,reuseaddr tcp:api:8000
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+      - external
+
+# Real extraction:
+#   docker compose -f docker-compose.full.yml up --build
+# (or override: `docker compose build --build-arg BUILD_MODE=full && docker compose up`)
+# Full image installs requirements-ml.txt. Requires LLM_API_KEY etc. in .env.
+
+volumes:
+  hf-cache:
+  paddleocr-cache:
+  paddlex-cache:
+
+networks:
+  internal:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.5.0/24
+  external:
+    driver: bridge

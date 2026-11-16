@@ -46,7 +46,12 @@ INVALID_VALUES = [
     (("ingredients", 0, "quantity", "value"), "200"),
     (("ingredients", 0, "quantity", "value"), None),
     (("ingredients", 0, "quantity", "unit"), "г"),
-    (("ingredients", 0, "quantity", "unit"), "cup"),
+    (("ingredients", 0, "quantity", "unit"), "cups"),  # только единственное число
+    (("ingredients", 0, "quantity", "unit"), "стакан"),  # домашняя мера идёт в note, не в unit
+    (("ingredients", 0, "quantity", "unit"), "cup"),  # черновик 1.1.0, не согласован upstream
+    (("ingredients", 0, "quantity", "unit"), "oz"),
+    (("ingredients", 0, "quantity", "unit"), "lb"),
+    (("ingredients", 0, "quantity", "unit"), "clove"),  # счётное уточнение: pcs + note
     (("ingredients", 0, "quantity", "unit"), None),
     (("steps",), []),
     (("steps", 0), "Отварить пасту."),
@@ -102,6 +107,8 @@ def schema_validator():
 
 def test_service_and_package_use_one_versioned_contract():
     assert ApiRecipe is Recipe
+    # 1.1.0 (cup, oz, lb) — черновик, ожидающий согласования upstream
+    # (docs/drafts/); до подтверждения пакет должен совпадать с upstream 1.0.0.
     assert CONTRACT_VERSION == "1.0.0"
     assert version("fropti-core-contracts") == CONTRACT_VERSION
 
@@ -230,7 +237,11 @@ def test_all_three_modules_accept_the_same_recipe(recipe_data, schema_validator,
 def test_contract_validator_cli_accepts_examples_and_rejects_invalid_json(tmp_path):
     valid_path = ROOT / "data/expected_outputs/pasta.json"
     invalid_path = tmp_path / "invalid.json"
-    invalid_path.write_text('{"schema_version":"1.0.0"}', encoding="utf-8")
+    # Полный рецепт 1.0.0 с чужой schema_version: отвергается именно
+    # проверкой версии, а не отсутствующих полей.
+    draft_recipe = json.loads((ROOT / "data/expected_outputs/pasta.json").read_text())
+    draft_recipe["schema_version"] = "1.1.0"
+    invalid_path.write_text(json.dumps(draft_recipe, ensure_ascii=False), encoding="utf-8")
 
     valid = subprocess.run(
         [sys.executable, "-m", "fropti_core_contracts", str(valid_path)],

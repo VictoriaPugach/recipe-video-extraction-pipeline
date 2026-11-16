@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fropti Video-to-Recipe",
-    "description": "Учебный каркас: /health работает, /extract и /extract/upload возвращают 501 до реализации распознавания. 200 — целевое поведение.",
+    "description": "Видео-рецепт через STT + OCR + LLM. /health всегда 200; /extract и /extract/upload возвращают Recipe 1.0.0 или структурированную ошибку по API reference.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -23,7 +23,7 @@
       }
     },
     {
-      "name": "Extract — 501 в каркасе, 200 после реализации",
+      "name": "Extract by URL — 200 с реальным видео и LLM-ключами, иначе 400/422/502/503",
       "request": {
         "method": "POST",
         "header": [
@@ -45,10 +45,10 @@
       }
     },
     {
-      "name": "Upload video — выбери файл, 501 до реализации",
+      "name": "Upload video — выбери локальный MP4 (≤100 МиБ, ≤180 с)",
       "request": {
         "method": "POST",
-        "description": "В Body выбери локальное видео в поле file. Файл должен быть непустым и не больше 100 МиБ. Распознавание пока не реализовано.",
+        "description": "В Body выбери локальное видео в поле file. Файл должен быть непустым и не больше 100 МиБ. Без ML-моделей вернётся 503 model_unavailable.",
         "body": {
           "mode": "formdata",
           "formdata": [

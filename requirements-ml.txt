@@ -1,0 +1,26 @@
+# Тяжёлые ML-зависимости для реального извлечения рецепта.
+# Устанавливаются отдельно через `make install-ml` — они не нужны
+# для `make install` и `make test`, потому что тесты используют
+# monkeypatch вместо реальных моделей и ffmpeg/yt-dlp CLI.
+
+faster-whisper>=1.0,<2.0
+# faster-whisper 1.2.1 still passes metadata_errors to av.open(), and PyAV 19.0.0
+# removed that argument (SYSTRAN/faster-whisper#1589, fixed on main, no release yet).
+# av>=19 breaks every transcription with TypeError: open() got an unexpected
+# keyword argument 'metadata_errors'. Pin until faster-whisper ships the fix,
+# then relax this pin.
+av>=11,<19
+# PaddlePaddle 3.x ships a manylinux1 wheel for cp312 that works cleanly on
+# Debian Bookworm (no zlib segfault). 3.x is API-compatible with PaddleOCR 2.x
+# for the calls we use (PaddleOCR(use_angle_cls=, lang=, show_log=) + .ocr(path, cls=)).
+paddlepaddle>=3.0,<4.0
+paddleocr>=2.7,<3.0
+# yt-dlp[default]: extra `default` ставит yt-dlp-ejs — пакет со скриптами
+# решения player-challenge YouTube (без него yt-dlp опирается только на
+# встроенный запасной скрипт), плюс стандартные зависимости (requests,
+# websockets, pycryptodomex и т.п.).
+# yt-dlp >= 2026.10.26 — первая линия релизов, в которой проверены опция
+# `--js-runtimes` и требование node >= 22 к JS-рантайму (извлечение YouTube
+# без поддерживаемого рантайма падает; node 22 ставится в Dockerfile,
+# имя рантайма — переменная YTDLP_JS_RUNTIME в src/config.py).
+yt-dlp[default]>=2026.10.26

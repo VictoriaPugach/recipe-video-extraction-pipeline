@@ -5,12 +5,17 @@ import sys
 from pydantic import HttpUrl, TypeAdapter, ValidationError
 
 from src import pipeline
+from src.config import MAX_VIDEO_SECONDS
+from src.errors import AppError
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fropti: извлечение рецепта из короткого видео")
     inputs = parser.add_mutually_exclusive_group(required=True)
-    inputs.add_argument("url", nargs="?", help="HTTP(S)-ссылка на видео длительностью до 180 секунд")
+    inputs.add_argument(
+        "url", nargs="?",
+        help=f"Ссылка YouTube/Shorts на видео длительностью до {MAX_VIDEO_SECONDS} секунд",
+    )
     inputs.add_argument("--file", type=Path, help="Путь к локальному видео")
     args = parser.parse_args()
     if args.file is not None:
@@ -23,14 +28,10 @@ def main() -> int:
         except ValidationError:
             parser.error("нужна корректная HTTP(S)-ссылка")
     try:
-        # TODO: Implement this — реализовать общий пайплайн в src/pipeline.py.
         recipe = pipeline.extract_recipe(source)
-    except pipeline.VideoTooLongError as exc:
-        print(str(exc), file=sys.stderr)
-        return 2
-    except NotImplementedError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
+    except AppError as exc:
+        print(f"[{exc.code}] {exc}", file=sys.stderr)
+        return 2 if isinstance(exc, pipeline.VideoTooLongError) else 1
     print(recipe.model_dump_json(indent=2))
     return 0
 

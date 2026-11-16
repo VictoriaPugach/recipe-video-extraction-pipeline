@@ -1,0 +1,18 @@
+Previous committed Plov upload artifact — not the latest 51/60 = 85.0% run.
+Command:
+python scripts/compare_gold.py --exclude /source --absent-equals-null --skip-notes --skip-instructions data/expected_outputs/plov.json runs/plov.upload.json
+
+Эталон:   data/expected_outputs/plov.json
+Результат: runs/plov.upload.json
+Пути в объединении: 62; совпадений: 53; расхождений: 9.
+Совпадение: 53/62 = 85.4% (порог 80%) — PASS
+Расхождения:
+  /steps/10/duration_seconds  эталон=1500  результат=null
+  /steps/11/duration_seconds  эталон=null  результат=1500
+  /steps/12/duration_seconds  [лишнее в результате]  результат=null
+  /steps/12/instruction  [лишнее в результате]  результат="<excluded-by-skip-instructions>"
+  /steps/4/duration_seconds  эталон=420  результат=null
+  /steps/5/duration_seconds  эталон=null  результат=4200
+  /steps/6/duration_seconds  эталон=2400  результат=null
+  /steps/7/duration_seconds  эталон=null  результат=2400
+  /title  эталон="real homemade plov"  результат="homemade plov"

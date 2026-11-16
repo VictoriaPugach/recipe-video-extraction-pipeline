@@ -1,0 +1,52 @@
+{
+  "status": "validation_set_supplied_5_videos",
+  "videos": [
+    {
+      "file": "shakshuka.mp4",
+      "source_url": "https://www.youtube.com/shorts/U4lQPin-zis",
+      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
+      "duration_seconds": 24.59,
+      "input_type": "audio_only",
+      "expected_output": "../expected_outputs/shakshuka.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "plov.mp4",
+      "source_url": "https://www.facebook.com/watch/?v=1293244242771191",
+      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
+      "duration_seconds": 100.3,
+      "input_type": "speech_and_text",
+      "expected_output": "../expected_outputs/plov.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "tomatoChickpea.mp4",
+      "source_url": "https://www.youtube.com/shorts/fhphZcnJ3dA",
+      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
+      "duration_seconds": 72.075,
+      "input_type": "text_only",
+      "expected_output": "../expected_outputs/tomatoChickpea.json",
+      "annotation_verified": true
+    }
+  ],
+  "additional_experiments": [
+    {
+      "file": "chocolateCake.mp4",
+      "source_url": "https://www.youtube.com/watch?v=tEPwZuWx8ds",
+      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
+      "duration_seconds": 140.938685,
+      "input_type": "audio_only",
+      "expected_output": "../expected_outputs/cake.json",
+      "annotation_verified": true
+    },
+    {
+      "file": "butterChicken.mp4",
+      "source_url": "https://www.youtube.com/shorts/18gdBoDT0Rk",
+      "license_or_permission": "Размещение в валидационном наборе согласовано с ревьюерами; источник указан",
+      "duration_seconds": 42.586,
+      "input_type": "audio_only",
+      "expected_output": "../expected_outputs/butterChicken.json",
+      "annotation_verified": true
+    }
+  ]
+}

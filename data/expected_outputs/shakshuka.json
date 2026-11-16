@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "title": "Single Serving Shakshuka",
+  "servings": 1,
+  "ingredients": [
+    {
+      "name": "olive oil",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "tomato paste",
+      "quantity": {
+        "value": 1.0,
+        "unit": "tbsp"
+      },
+      "note": null
+    },
+    {
+      "name": "chopped tomatoes",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "minced garlic",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "garlic powder",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "paprika",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "red pepper flakes",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "lentils",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "water",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "eggs",
+      "quantity": {
+        "value": 2.0,
+        "unit": "pcs"
+      },
+      "note": "1-2"
+    },
+    {
+      "name": "fresh parsley",
+      "quantity": null,
+      "note": null
+    },
+    {
+      "name": "feta",
+      "quantity": null,
+      "note": null
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "With some olive oil in a pan, add in 1 tablespoon of tomato paste and cook that down.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Then add in chopped tomatoes, minced garlic, garlic powder, paprika, red pepper flakes and lentils.",
+      "duration_seconds": null
+    },
+    {
+      "instruction": "Pour in some water, cover with a lid and let this cook on a medium low heat for about 20 minutes.",
+      "duration_seconds": 1200
+    },
+    {
+      "instruction": "Mash up the tomatoes then crack in 1-2 eggs, cook uncovered for 1 minute and covered for 2 minutes for a runny yolk.",
+      "duration_seconds": 180
+    },
+    {
+      "instruction": "Top it off with fresh parsley, feta and enjoy.",
+      "duration_seconds": null
+    }
+  ],
+  "source": {
+    "type": "upload"
+  },
+  "total_time_minutes": null
+}
